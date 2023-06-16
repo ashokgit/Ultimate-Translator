@@ -4,6 +4,7 @@ services:
     image: mongo
     ports:
       - 27017:27017
+
   app:
     build:
       context: .
@@ -12,5 +13,12 @@ services:
       - 3000:3000
     volumes:
       - .:/app
+    depends_on:
+      - mongo
+
+  translator:
+    image: dikshantniraula/huggingface-translator:latest
+    ports:
+      - 5000:5000
     depends_on:
       - mongo
