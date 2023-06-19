@@ -1,22 +1,23 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>The Inceptor Translator</title>
+    <title>The Inceptor Json Updater</title>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/js-beautify/1.14.8/beautify.min.js"></script>
   </head>
   <body>
     <div class="container">
-      <h1 class="title">The Inceptor Translator</h1>
-      <p class="description">Traslate Web content with ease</p>
-      <a href="index.html">
+      <h1 class="title">
+        The Inceptor <span style="color: #b8e9c2"> { JSON Updater }</span>
+      </h1>
+      <p class="description">Update JSON content with ease</p>
+      <a href="interceptor.html">
         <button type="button" id="interceptor-button">
-          Open Interceptor Parser
+          Open Interceptor Translator
         </button>
       </a>
-
-      <a href="update-translation.html">
-        <button type="button" id="update-button">
+      <a href="source-change.html">
+        <button type="button" id="source-button">
           Process Translated Data
         </button>
       </a>
@@ -36,18 +37,22 @@
           name="model-name"
           placeholder="Enter model name"
         />
-        <label for="id">ID:</label>
-        <input type="text" id="id" name="id" placeholder="Enter ID" />
-        <label for="source-url">Source URL:</label>
+        <label for="content-id">Content ID:</label>
         <input
           type="text"
-          id="source-url"
-          name="source-url"
-          placeholder="Enter source URL"
+          id="content-id"
+          name="content-id"
+          placeholder="Enter Content ID"
         />
-        <button type="button" id="translate-button">Translate</button>
+        <button type="button" id="translate-button">Fetch Translation</button>
+        <button type="button" id="update-button">Update Translation</button>
       </form>
-      <div id="output" class="output-container"></div>
+      <textarea
+        id="output"
+        rows="20"
+        cols="70"
+        style="margin-top: 20px"
+      ></textarea>
     </div>
 
     <style>
@@ -116,7 +121,12 @@
       }
 
       #update-button {
-        background-color: #e28010;
+        background-color: #c0790f;
+        border-radius: 10px;
+      }
+
+      #source-button {
+        background-color: #346315;
         border-radius: 10px;
       }
 
@@ -145,35 +155,72 @@
     </style>
 
     <script>
-      function translate() {
+      function fetchTranslation() {
         var language = $("#language").val();
         var modelName = $("#model-name").val();
-        var id = $("#id").val();
-        var sourceUrl = $("#source-url").val();
+        var contentId = $("#content-id").val();
 
         $.ajax({
-          url: "/api/v1/translate",
+          url: "/api/v1/translation-filter",
           method: "GET",
           data: {
-            language,
+            content_id: contentId,
             model_name: modelName,
-            content_id: id,
-            source_url: sourceUrl,
+            language: language,
           },
+          dataType: "json",
           success: function (response) {
-            var message = response.message; // Extract the response message
+            // Beautify the JSON response
+            var jsonOutput = js_beautify(JSON.stringify(response[language]), {
+              indent_size: 2,
+              space_in_empty_paren: true,
+            });
 
-            $("#output").text(message); // Display the response message in the output div
+            var decodedOutput = unescape(jsonOutput);
+            $("#output").val(decodedOutput);
+
+            // Display the beautified JSON output in the output textarea
           },
-          error: function () {
-            $("#output").text("Failed to retrieve JSON data");
+          error: function (error) {
+            $("#output").text(
+              "Failed to retrieve translation: " + error.responseJSON.error
+            );
           },
         });
       }
 
-      // Attach click event listener to the Translate button
+      function updateTranslation() {
+        var language = $("#language").val();
+        var modelName = $("#model-name").val();
+        var contentId = $("#content-id").val();
+        var updatedJson = $("#output").val();
+
+        $.ajax({
+          url: "/api/v1/update-translation",
+          method: "POST",
+          data: {
+            content_id: contentId,
+            model_name: modelName,
+            language: language,
+            updatedJson: updatedJson,
+          },
+          success: function (response) {
+            // Trigger the Fetch Translation functionality to display the updated translation
+            fetchTranslation();
+            console.log(response.data);
+          },
+          error: function (error) {
+            $("#output").text(
+              "Failed to update translation: " + error.responseJSON.error
+            );
+          },
+        });
+      }
+
+      // Attach click event listeners to the Fetch Translation and Update Translation buttons
       $(document).ready(function () {
-        $("#translate-button").click(translate);
+        $("#translate-button").click(fetchTranslation);
+        $("#update-button").click(updateTranslation);
       });
     </script>
   </body>

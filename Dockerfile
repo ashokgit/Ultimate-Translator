@@ -10,8 +10,11 @@ COPY package*.json ./
 # Install Node.js dependencies
 RUN npm install
 
+# Copy the entire project directory to the working directory
+COPY . .
+
 # Copy the server.js file from the root of the project to the working directory
-COPY server.js .
+# COPY server.js .
 
 # Expose port 3000
 EXPOSE 3000

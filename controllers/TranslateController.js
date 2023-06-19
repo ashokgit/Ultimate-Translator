@@ -1,5 +1,7 @@
 const TranslatedPage = require("../models/TranslatedPage");
 const PageTranslationService = require("../services/PageTranslationService");
+const compareService = require("../services/JsonCompareUpdateService");
+const filterTranslation = require("../services/FilterTranslationService");
 
 const translateController = {
   translatePage: async (req, res) => {
@@ -22,38 +24,55 @@ const translateController = {
     }
   },
 
-  translationFilter: async (req, res) => {
+  updateTranslation: async (req, res) => {
     try {
-      const { language, content_id, model_name } = req.query;
+      const { content_id, model_name, language, updatedJson } = req.body;
 
       const existingTranslatedPage = await TranslatedPage.findOne({
-        content_id,
-        model_name,
+        content_id: content_id,
+        model_name: model_name,
       });
 
       if (!existingTranslatedPage) {
-        return res.status(404).json({ error: "Translations not found." });
+        return res
+          .status(404)
+          .json({ success: false, error: "Translation not found" });
       }
 
+      // Update the translation for the specified language
       const translations = existingTranslatedPage.translations;
+      const existingTranslation = translations.find((translation) => {
+        return Object.keys(translation)[0] === language;
+      });
 
-      if (language) {
-        const filteredTranslation = translations.find(
-          (translation) => Object.keys(translation)[0] === language
-        );
-
-        if (!filteredTranslation) {
-          return res.status(404).json({
-            error: `Translations not found for language ${language}.`,
-          });
-        }
-
-        return res.status(200).json(filteredTranslation);
+      if (!existingTranslation) {
+        return res
+          .status(404)
+          .json({ success: false, error: "Language translation not found" });
       }
 
-      res.status(200).json(existingTranslatedPage);
+      existingTranslation[language] = JSON.parse(updatedJson);
+      existingTranslatedPage.markModified("translations");
+      await existingTranslatedPage.save();
+
+      return res
+        .status(200)
+        .json({ success: true, data: existingTranslatedPage });
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      console.error(`Failed to update translation: ${error.message}`);
+      return res
+        .status(500)
+        .json({ success: false, error: "Failed to update translation" });
+    }
+  },
+
+  translationFilter: async (req, res) => {
+    const filterResponse = await filterTranslation(req);
+
+    if (filterResponse.success) {
+      res.status(200).json(filterResponse.data);
+    } else {
+      res.status(404).json({ error: filterResponse.error });
     }
   },
 };

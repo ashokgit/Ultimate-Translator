@@ -4,13 +4,17 @@ const {
   postTranslate,
   translatePage,
   translationFilter,
+  updateTranslation,
 } = require("../controllers/TranslateController");
 const { default: axios } = require("axios");
+const { changeSource } = require("../controllers/SourceController");
 
 // Define API routes
 router.get("/translation-filter", translationFilter);
 router.get("/translate", translatePage);
-// router.post("/translate", postTranslate);
+router.post("/update-translation", updateTranslation);
+
+router.put("/update-source", changeSource);
 
 router.get("/getJsonContent", async (req, res) => {
   try {
