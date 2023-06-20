@@ -4,7 +4,7 @@ class SourceCompareService {
   constructor(contentId, modelName) {
     this.contentId = contentId;
     this.modelName = modelName;
-    this.changedPaths = [];
+    this.changedPaths = {};
     this.sourceObj = null;
   }
 
@@ -19,7 +19,6 @@ class SourceCompareService {
           // Handle arrays
           if (updatedValue.length !== sourceValue.length) {
             this.changedPaths[currentKeyPath] = true;
-            this.updateTranslationSourceChanged(currentKeyPath);
           } else {
             for (let i = 0; i < updatedValue.length; i++) {
               this.compare(
@@ -31,57 +30,23 @@ class SourceCompareService {
           }
         } else {
           // Handle nested objects
-          if (key === "translations") {
-            // Compare translations array separately
-            this.compareTranslations(sourceValue, updatedValue, currentKeyPath);
-          } else {
-            this.compare(sourceValue, updatedValue, currentKeyPath);
-          }
+          this.compare(sourceValue, updatedValue, currentKeyPath);
         }
       } else if (updatedValue !== sourceValue) {
         // Value is changed
         this.changedPaths[currentKeyPath] = true;
-        this.updateTranslationSourceChanged(currentKeyPath);
+        console.log(
+          `Value changed at ${currentKeyPath}:`,
+          `Source: ${sourceValue}`,
+          `Updated: ${updatedValue}`
+        );
       }
     }
   }
 
-  compareTranslations(sourceArr, updatedArr, currentPath) {
-    // Compare the translations array separately
-    for (let i = 0; i < updatedArr.length; i++) {
-      const updatedTranslation = updatedArr[i];
-      const sourceTranslation = sourceArr[i];
-      const translationPath = `${currentPath}[${i}]`;
-
-      for (const lang in updatedTranslation) {
-        const updatedLangObj = updatedTranslation[lang];
-        const sourceLangObj = sourceTranslation[lang];
-
-        if (
-          typeof updatedLangObj === "object" &&
-          typeof sourceLangObj === "object"
-        ) {
-          // Compare individual language objects
-          for (const langKey in updatedLangObj) {
-            const updatedLangValue = updatedLangObj[langKey];
-            const sourceLangValue = sourceLangObj[langKey];
-            const langKeyPath = `${translationPath}.${lang}.${langKey}`;
-
-            if (updatedLangValue !== sourceLangValue) {
-              // Value is changed in the language object
-              this.changedPaths[langKeyPath] = true;
-              this.updateTranslationSourceChanged(langKeyPath);
-            }
-          }
-        } else {
-          // Invalid translation structure, skip comparison
-        }
-      }
-    }
-  }
-
-  async updateTranslations(updatedJson) {
+  async updateTranslations() {
     try {
+      let changedPaths = this.changedPaths;
       const existingTranslatedPage = await TranslatedPage.findOne({
         content_id: this.contentId,
         model_name: this.modelName,
@@ -93,44 +58,56 @@ class SourceCompareService {
 
       const translations = existingTranslatedPage.translations;
 
+      // Convert changedPaths object to an array
+      const changedPathsArray = Object.keys(changedPaths);
+
+      // Iterate over each translation
       for (const translation of translations) {
         const language = Object.keys(translation)[0];
         const translationData = translation[language];
 
-        this.updateTranslationSourceChanged(translationData);
+        // Iterate over each changed path
+        for (const changedPath of changedPathsArray) {
+          const pathParts = changedPath.split(".");
+          let obj = translationData;
+
+          // Traverse the translation data to reach the parent object of the changed path
+          for (const key of pathParts.slice(0, -1)) {
+            obj = obj[key];
+          }
+
+          console.log(`Language: ${language}`);
+          console.log(`Changed Path: ${changedPath}`);
+          console.log("Parent Object:", obj);
+          console.log();
+
+          // obj will now be the parent object of the changed path
+          // Update the source_changed property to true in the parent object
+          obj.source_changed = true;
+        }
       }
 
-      existingTranslatedPage.source_data = updatedJson;
-      await existingTranslatedPage.save();
+      // Update the translations in the database
+      const updatedTranslatedPage = await TranslatedPage.findOneAndUpdate(
+        {
+          content_id: this.contentId,
+          model_name: this.modelName,
+        },
+        { translations: translations },
+        { new: true }
+      );
+
+      console.log("Updated TranslatedPage:", updatedTranslatedPage);
     } catch (error) {
       throw new Error(`Failed to update translations: ${error.message}`);
     }
   }
 
-  updateTranslationSourceChanged(obj, currentPath = "") {
-    for (const key in obj) {
-      const value = obj[key];
-      const currentKeyPath = currentPath ? `${currentPath}.${key}` : key;
-
-      if (typeof value === "object" && !Array.isArray(value)) {
-        this.updateTranslationSourceChanged(value, currentKeyPath);
-      }
-    }
-
-    if (obj.hasOwnProperty("source_changed")) {
-      obj.source_changed = true;
-    }
-  }
-
   async compareAndUpdate(sourceData, updatedJson) {
-    this.changedPaths = []; // Reset the changed paths
-    this.sourceObj = sourceData; // Store the source data for comparison
-
+    this.sourceObj = sourceData;
     this.compare(sourceData, updatedJson);
-    await this.updateTranslations(updatedJson);
-    console.log(
-      "#################################################################################################################################"
-    );
+    this.updateTranslations();
+    console.log("Changed Paths:");
     console.log(this.changedPaths);
     return this.changedPaths;
   }
