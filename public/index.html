@@ -12,6 +12,9 @@
       <a href="interceptor.html">
         <button type="button" id="interceptor-button">Open Interceptor</button>
       </a>
+      <a href="string-translator.html">
+        <button type="button" id="string-button">String Translator</button>
+      </a>
       <form class="translate-form">
         <label for="language">Select Language:</label>
         <select id="language" name="language">
@@ -39,6 +42,115 @@
         <button type="button" id="translate-button">Parse Now</button>
       </form>
       <div id="output" class="output-container"></div>
+    </div>
+
+    <!-- Buttons -->
+    <div style="display: flex; flex-wrap: wrap">
+      <button
+        style="
+          margin: 10px;
+          padding: 15px 30px;
+          background-color: #ff8c00;
+          color: white;
+          border: none;
+          border-radius: 5px;
+          font-size: 16px;
+          box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+          transition: transform 0.3s;
+        "
+      >
+        Parse Source
+      </button>
+      <button
+        style="
+          margin: 10px;
+          padding: 15px 30px;
+          background-color: #008080;
+          color: white;
+          border: none;
+          border-radius: 5px;
+          font-size: 16px;
+          box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+          transition: transform 0.3s;
+        "
+      >
+        String Translator
+      </button>
+      <button
+        style="
+          margin: 10px;
+          padding: 15px 30px;
+          background-color: #ff69b4;
+          color: white;
+          border: none;
+          border-radius: 5px;
+          font-size: 16px;
+          box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+          transition: transform 0.3s;
+        "
+      >
+        JSON Updater
+      </button>
+      <button
+        style="
+          margin: 10px;
+          padding: 15px 30px;
+          background-color: #6495ed;
+          color: white;
+          border: none;
+          border-radius: 5px;
+          font-size: 16px;
+          box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+          transition: transform 0.3s;
+        "
+      >
+        Source Updater
+      </button>
+      <button
+        style="
+          margin: 10px;
+          padding: 15px 30px;
+          background-color: #800080;
+          color: white;
+          border: none;
+          border-radius: 5px;
+          font-size: 16px;
+          box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+          transition: transform 0.3s;
+        "
+      >
+        Interceptor / Translate New Source
+      </button>
+      <button
+        style="
+          margin: 10px;
+          padding: 15px 30px;
+          background-color: #32cd32;
+          color: white;
+          border: none;
+          border-radius: 5px;
+          font-size: 16px;
+          box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+          transition: transform 0.3s;
+        "
+      >
+        Button 6
+      </button>
+      <button
+        style="
+          margin: 10px;
+          padding: 15px 30px;
+          background-color: #dc143c;
+          color: white;
+          border: none;
+          border-radius: 5px;
+          font-size: 16px;
+          box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+          transition: transform 0.3s;
+        "
+      >
+        Button 7
+      </button>
     </div>
 
     <style>
@@ -103,6 +215,10 @@
 
       #interceptor-button {
         border-radius: 10px;
+      }
+
+      #string-button {
+        background-color: #aa2add;
       }
 
       button[type="button"]:hover {
