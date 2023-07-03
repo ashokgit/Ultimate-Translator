@@ -1,6 +1,6 @@
 const TranslationLog = require("../models/TranslationLog");
 const TextTranslator = require("../translators/TextTranslator");
-const { isURL } = require("../helpers/stringHelpers");
+const { isURL, makeSlug } = require("../helpers/stringHelpers");
 
 class TranslationGeneratorService {
   async generateTranslations(data, language) {
@@ -53,8 +53,6 @@ class TranslationGeneratorService {
             value.length <= 100
           ) {
             hasPerfectString = true;
-            console.log(value);
-            console.log(true);
 
             const existingTranslation = await TranslationLog.findOne({
               text: value,
@@ -62,10 +60,10 @@ class TranslationGeneratorService {
             });
 
             if (existingTranslation) {
-              console.log("Translation log found. Using stored translation.");
               obj[key] = existingTranslation.translated_text;
             } else {
               const translatedValue = await this.translate(value, language);
+              obj[key] = translatedValue;
 
               // Save Translation Log
               const newTranslationLog = new TranslationLog({
@@ -76,13 +74,8 @@ class TranslationGeneratorService {
 
               await newTranslationLog.save();
               // Save Translation Log
-
-              obj[key] = translatedValue;
             }
           }
-
-          console.log(value);
-          console.log(false);
         }
 
         if (hasPerfectString) {
@@ -92,6 +85,12 @@ class TranslationGeneratorService {
           obj.auto_verify = false;
         }
       }
+
+      const title = obj?.description
+        ? await this.translate(obj.description, language)
+        : "";
+      obj.url = makeSlug(title);
+      obj.old_urls = [];
     };
 
     const translatedData = await traverse(data, "");
@@ -107,5 +106,4 @@ class TranslationGeneratorService {
     return translatedText;
   }
 }
-
 module.exports = TranslationGeneratorService;

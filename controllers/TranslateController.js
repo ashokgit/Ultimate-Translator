@@ -2,6 +2,7 @@ const TranslatedPage = require("../models/TranslatedPage");
 const PageTranslationService = require("../services/PageTranslationService");
 const compareService = require("../services/JsonCompareUpdateService");
 const filterTranslation = require("../services/FilterTranslationService");
+const getTranslationByUrl = require("../services/FilterByUrlService");
 
 const translateController = {
   translatePage: async (req, res) => {
@@ -68,6 +69,16 @@ const translateController = {
 
   translationFilter: async (req, res) => {
     const filterResponse = await filterTranslation(req);
+
+    if (filterResponse.success) {
+      res.status(200).json(filterResponse.data);
+    } else {
+      res.status(404).json({ error: filterResponse.error });
+    }
+  },
+
+  filterByUrl: async (req, res) => {
+    const filterResponse = await getTranslationByUrl(req);
 
     if (filterResponse.success) {
       res.status(200).json(filterResponse.data);
