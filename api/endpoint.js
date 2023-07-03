@@ -1,5 +1,7 @@
 const express = require("express");
 const router = express.Router();
+
+//Imports from Controller
 const {
   translatePage,
   translationFilter,
@@ -20,20 +22,37 @@ const {
   updateTranslationUrl,
 } = require("../controllers/TranslationUrlController");
 
+//Import Validations
+
+const {
+  validateStringTranslation,
+} = require("../validations/stringTranslatorValidate");
+const {
+  validateUpdateTranslation,
+} = require("../validations/updateTranslationValidate");
+const { validateSourceChange } = require("../validations/changeSourceValidate");
+const {
+  validateUpdateUrl,
+} = require("../validations/validateUpdateTranslationUrl");
+
 // Define API routes
 router.get("/translation-filter", translationFilter);
 router.get("/filter-by-url", filterByUrl);
 
 router.get("/translate", translatePage);
-router.post("/update-translation", updateTranslation);
+router.post(
+  "/update-translation",
+  validateUpdateTranslation,
+  updateTranslation
+);
 
-router.put("/update-source", changeSource);
+router.put("/update-source", validateSourceChange, changeSource);
 
-router.post("/translate-text", translateString);
+router.post("/translate-text", validateStringTranslation, translateString);
 router.get("/get-list", filterList);
 router.get("/get-available-language", availableLanguages);
 
-router.put("/update-translation-url", updateTranslationUrl);
+router.put("/update-translation-url", validateUpdateUrl, updateTranslationUrl);
 
 router.get("/getJsonContent", async (req, res) => {
   try {

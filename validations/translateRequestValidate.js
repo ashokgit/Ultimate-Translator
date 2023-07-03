@@ -1,6 +1,6 @@
 const Joi = require("joi");
 
-const translateRequestSchema = Joi.object({
+const translateRequestValidate = Joi.object({
   language: Joi.string().required(),
   model_name: Joi.string().required(),
   id: Joi.string().required(),
@@ -8,5 +8,5 @@ const translateRequestSchema = Joi.object({
 });
 
 module.exports = {
-  translateRequestSchema,
+  translateRequestValidate,
 };
