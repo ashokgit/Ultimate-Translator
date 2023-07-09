@@ -1,6 +1,4 @@
 const chai = require("chai");
-const axios = require("axios");
-const sinon = require("sinon");
 const JsonFetcherService = require("../services/JsonFetcherService");
 
 const expect = chai.expect;

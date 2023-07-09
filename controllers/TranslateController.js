@@ -42,9 +42,11 @@ const translateController = {
 
       // Update the translation for the specified language
       const translations = existingTranslatedPage.translations;
-      const existingTranslation = translations.find((translation) => {
-        return Object.keys(translation)[0] === language;
-      });
+      const existingTranslation =
+        translations &&
+        translations.find((translation) => {
+          return Object.keys(translation)[0] === language;
+        });
 
       if (!existingTranslation) {
         return res
