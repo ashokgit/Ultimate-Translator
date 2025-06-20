@@ -8,12 +8,23 @@ services:
   app:
     build: .
     ports:
-      - 3000:3000
+      - "${PORT:-3000}:${PORT:-3000}"
     volumes:
       - .:/app
       - /app/node_modules
+      - /app/logs
+    environment:
+      - NODE_ENV=production
+      - MONGODB_URI=mongodb://mongo:27017/ultimate_translator
+      - DEFAULT_TRANSLATOR=${DEFAULT_TRANSLATOR:-huggingface}
+      - HUGGINGFACE_API_URL=http://translator:5000
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - PORT=${PORT:-3000}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - GOOGLE_TRANSLATE_PROXIES=${GOOGLE_TRANSLATE_PROXIES}
     depends_on:
       - mongo
+    restart: unless-stopped
 
   translator:
     image: dikshantniraula/huggingface-translator:latest

@@ -1,5 +1,8 @@
-# Use the official Node.js v14.x image as the base image
-FROM node:14
+# Use the official Node.js v18.x image as the base image (LTS)
+FROM node:18-alpine
+
+# Create a non-root user
+RUN addgroup -g 1001 -S nodejs && adduser -S nodeuser -u 1001
 
 # Set the working directory inside the container
 WORKDIR /app
@@ -8,16 +11,26 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install Node.js dependencies
-RUN npm install
+RUN npm ci --only=production && npm cache clean --force
+
+# Create logs directory and set permissions
+RUN mkdir -p logs && chown -R nodeuser:nodejs logs
 
 # Copy the entire project directory to the working directory
-COPY . .
+COPY --chown=nodeuser:nodejs . .
 
-# Copy the server.js file from the root of the project to the working directory
-# COPY server.js .
+# Remove development files
+RUN rm -rf test/ .git/ .gitignore
 
-# Expose port 3000
-EXPOSE 3000
+# Use non-root user
+USER nodeuser
+
+# Expose port (configurable via environment variable)
+EXPOSE ${PORT:-3000}
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:' + (process.env.PORT || 3000) + '/api/v1/get-available-language', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"
 
 # Start the web service
-CMD ["node", "server.js"]
+CMD ["npm", "start"]

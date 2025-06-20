@@ -1,5 +1,6 @@
 const TranslationLog = require("../models/TranslationLog");
 const TextTranslator = require("../translators/TextTranslator");
+const logger = require("../utils/logger");
 
 const StringTranslatorController = {
   translateString: async (req, res) => {
@@ -11,19 +12,22 @@ const StringTranslatorController = {
         text,
         language
       );
-      // Save Translation Log
-      const newTranslationLog = new TranslationLog({
-        text: text,
-        lang: language,
-        translated_text: translated_text,
+
+      logger.info("String translation completed", {
+        textLength: text.length,
+        targetLanguage: language,
+        resultLength: translated_text.length
       });
 
-      await newTranslationLog.save();
-
-      return res.status(200).json(translated_text);
+      return res.status(200).json({ translated_text });
     } catch (error) {
-      console.error("Error translating page:", error);
-      res.status(500).json({ error: error });
+      logger.error("Error translating string", {
+        textLength: text?.length || 0,
+        targetLanguage: language,
+        error: error.message
+      });
+      
+      res.status(500).json({ error: "Translation failed. Please try again later." });
     }
   },
 };

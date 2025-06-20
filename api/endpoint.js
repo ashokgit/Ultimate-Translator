@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const logger = require("../utils/logger");
 
 //Imports from Controller
 const {
@@ -61,7 +62,11 @@ router.get("/getJsonContent", async (req, res) => {
 
     res.json(response.data);
   } catch (error) {
-    console.error(error);
+    logger.error("Failed to fetch JSON content", {
+      sourceUrl: sourceUrl,
+      error: error.message
+    });
+    
     res.status(500).json({ error: "Failed to fetch data" });
   }
 });

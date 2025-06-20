@@ -3,6 +3,7 @@ const PageTranslationService = require("../services/PageTranslationService");
 const compareService = require("../services/JsonCompareUpdateService");
 const filterTranslation = require("../services/FilterTranslationService");
 const getTranslationByUrl = require("../services/FilterByUrlService");
+const logger = require("../utils/logger");
 
 const translateController = {
   translatePage: async (req, res) => {
@@ -17,11 +18,24 @@ const translateController = {
         source_url,
         content_id
       );
-      console.log(savedPage);
+      logger.info("Page translation completed", {
+        contentId: content_id,
+        modelName: model_name,
+        language: language,
+        sourceUrl: source_url
+      });
+      
       return res.status(200).json(savedPage);
     } catch (error) {
-      console.error("Error translating page:", error);
-      res.status(500).json({ error: error.message });
+      logger.error("Error translating page", {
+        contentId: content_id,
+        modelName: model_name,
+        language: language,
+        sourceUrl: source_url,
+        error: error.message
+      });
+      
+      res.status(500).json({ error: "Translation failed. Please try again later." });
     }
   },
 
@@ -62,7 +76,13 @@ const translateController = {
         .status(200)
         .json({ success: true, data: existingTranslatedPage });
     } catch (error) {
-      console.error(`Failed to update translation: ${error.message}`);
+      logger.error("Failed to update translation", {
+        contentId: content_id,
+        modelName: model_name,
+        language: language,
+        error: error.message
+      });
+      
       return res
         .status(500)
         .json({ success: false, error: "Failed to update translation" });

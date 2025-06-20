@@ -1,5 +1,7 @@
 const express = require("express");
 const mongoose = require("mongoose");
+const config = require("./config");
+const logger = require("./utils/logger");
 const connectDB = require("./db/connect");
 const apiRoutes = require("./api/endpoint");
 const path = require("path");
@@ -9,6 +11,18 @@ const { translate } = require("@vitalets/google-translate-api");
 const TextTranslator = require("./translators/TextTranslator");
 
 const app = express();
+
+// Setup request logging middleware
+app.use((req, res, next) => {
+  const startTime = Date.now();
+  
+  res.on('finish', () => {
+    const responseTime = Date.now() - startTime;
+    logger.logRequest(req, res, responseTime);
+  });
+  
+  next();
+});
 
 // Connect to MongoDB
 connectDB();
@@ -36,7 +50,11 @@ app.get("/make-translate", async (req, res) => {
 });
 
 // Start the server
-const port = 3000;
+const port = config.server.port;
 app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
+  logger.info("Server started successfully", {
+    port: port,
+    environment: config.server.nodeEnv,
+    defaultTranslator: config.translation.defaultProvider
+  });
 });
