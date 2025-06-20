@@ -51,17 +51,16 @@ router.put("/update-source",
   asyncHandler(changeSource)
 );
 
-router.post("/translate-text", 
+router.post("/string-translate", 
   validators.stringTranslation, 
   asyncHandler(translateString)
 );
 
-router.get("/get-list", 
+router.get("/translated-list", 
   asyncHandler(filterList)
 );
 
-router.get("/get-available-language", 
-  validators.availableLanguages, 
+router.get("/available-languages", 
   asyncHandler(availableLanguages)
 );
 

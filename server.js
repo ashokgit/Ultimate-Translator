@@ -82,12 +82,17 @@ app.use('*', (req, res, next) => {
   next(error);
 });
 
-// Start the server
-const port = config.server.port;
-app.listen(port, () => {
-  logger.info("Server started successfully", {
-    port: port,
-    environment: config.server.nodeEnv,
-    defaultTranslator: config.translation.defaultProvider
+// Export app for testing
+module.exports = app;
+
+// Start the server only if not in test mode
+if (process.env.NODE_ENV !== 'test') {
+  const port = config.server.port;
+  app.listen(port, () => {
+    logger.info("Server started successfully", {
+      port: port,
+      environment: config.server.nodeEnv,
+      defaultTranslator: config.translation.defaultProvider
+    });
   });
-});
+}

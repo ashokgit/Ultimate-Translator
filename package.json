@@ -6,8 +6,12 @@
   "scripts": {
     "start": "node server.js",
     "dev": "NODE_ENV=development node server.js",
-    "test": "mocha test/**/*.test.js",
-    "test:watch": "mocha test/**/*.test.js --watch"
+    "test": "node scripts/test-runner.js",
+    "test:watch": "node scripts/test-runner.js --watch",
+    "test:coverage": "node scripts/test-runner.js --coverage",
+    "test:unit": "mocha test/validation.test.js test/errorHandling.test.js --timeout 5000",
+    "test:integration": "mocha test/translationServices.test.js test/apiIntegration.test.js --timeout 10000",
+    "test:all": "npm run test:unit && npm run test:integration"
   },
   "keywords": [],
   "author": "",
@@ -32,6 +36,7 @@
   "devDependencies": {
     "chai": "^4.3.7",
     "mocha": "^10.2.0",
+    "nyc": "^17.1.0",
     "sinon": "^15.2.0",
     "supertest": "^6.3.3"
   }

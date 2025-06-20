@@ -195,10 +195,10 @@ const validators = {
 const sanitizeInput = (input) => {
   if (typeof input === 'string') {
     return input
-      .trim()
       .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '') // Remove script tags
       .replace(/javascript:/gi, '') // Remove javascript: protocol
-      .replace(/on\w+\s*=/gi, ''); // Remove event handlers
+      .replace(/on\w+\s*=/gi, '') // Remove event handlers
+      .trim(); // Trim whitespace AFTER removing dangerous content
   }
   
   if (typeof input === 'object' && input !== null) {
