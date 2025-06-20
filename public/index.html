@@ -1,284 +1,285 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <title>The Inceptor Json Parser</title>
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/js-beautify/1.14.8/beautify.min.js"></script>
-  </head>
-  <body>
-    <div class="container">
-      <h1 class="title">The Inceptor Translator</h1>
-      <p class="description">Parse Web content with ease</p>
-      <a href="interceptor.html">
-        <button type="button" id="interceptor-button">Open Interceptor</button>
-      </a>
-      <a href="string-translator.html">
-        <button type="button" id="string-button">String Translator</button>
-      </a>
-      <form class="translate-form">
-        <label for="language">Select Language:</label>
-        <select id="language" name="language">
-          <option value="en">English</option>
-          <option value="es">Spanish</option>
-          <option value="fr">French</option>
-          <!-- Add more language options as needed -->
-        </select>
-        <label for="model-name">Model Name:</label>
-        <input
-          type="text"
-          id="model-name"
-          name="model-name"
-          placeholder="Enter model name"
-        />
-        <label for="id">ID:</label>
-        <input type="text" id="id" name="id" placeholder="Enter ID" />
-        <label for="source-url">Source URL:</label>
-        <input
-          type="text"
-          id="source-url"
-          name="source-url"
-          placeholder="Enter source URL"
-        />
-        <button type="button" id="translate-button">Parse Now</button>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ultimate Translator - Professional Translation Platform</title>
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- External Libraries -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/js-beautify/1.14.8/beautify.min.js"></script>
+  
+  <!-- Custom Styles -->
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <div class="container">
+    <!-- Header Section -->
+    <header class="header">
+      <h1>Ultimate <span class="accent">Translator</span></h1>
+      <p class="subtitle">Professional translation platform powered by AI</p>
+    </header>
+
+    <!-- Navigation Cards -->
+    <div class="nav-grid">
+      <!-- JSON Content Parser -->
+      <div class="nav-card">
+        <div class="nav-card-content">
+          <div class="icon">🌐</div>
+          <h3>JSON Content Parser</h3>
+          <p>Parse and extract content from web-based JSON sources with intelligent structure detection.</p>
+          <a href="#parser" class="btn btn-primary">Start Parsing</a>
+        </div>
+      </div>
+
+      <!-- Page Translation -->
+      <div class="nav-card">
+        <div class="nav-card-content">
+          <div class="icon">🔄</div>
+          <h3>Page Translation</h3>
+          <p>Translate entire web pages and JSON content while preserving structure and formatting.</p>
+          <a href="interceptor.html" class="btn btn-primary">Open Translator</a>
+        </div>
+      </div>
+
+      <!-- String Translation -->
+      <div class="nav-card">
+        <div class="nav-card-content">
+          <div class="icon">✨</div>
+          <h3>Text Translation</h3>
+          <p>Quick and accurate translation of individual text strings using advanced AI models.</p>
+          <a href="string-translator.html" class="btn btn-primary">Translate Text</a>
+        </div>
+      </div>
+
+      <!-- Translation Management -->
+      <div class="nav-card">
+        <div class="nav-card-content">
+          <div class="icon">⚙️</div>
+          <h3>Translation Management</h3>
+          <p>Update, edit, and manage your existing translations with version control.</p>
+          <a href="update-translation.html" class="btn btn-primary">Manage Translations</a>
+        </div>
+      </div>
+
+      <!-- Source Management -->
+      <div class="nav-card">
+        <div class="nav-card-content">
+          <div class="icon">📝</div>
+          <h3>Source Management</h3>
+          <p>Update and modify source content while maintaining translation consistency.</p>
+          <a href="source-change.html" class="btn btn-primary">Manage Sources</a>
+        </div>
+      </div>
+
+      <!-- Analytics & Reports -->
+      <div class="nav-card">
+        <div class="nav-card-content">
+          <div class="icon">📊</div>
+          <h3>Analytics & Reports</h3>
+          <p>Monitor translation performance, track usage, and generate detailed reports.</p>
+          <a href="#analytics" class="btn btn-secondary">Coming Soon</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- JSON Content Parser Section -->
+    <section id="parser" class="form-container">
+      <h2 class="form-title">JSON Content Parser</h2>
+      
+      <form class="parser-form">
+        <div class="form-group">
+          <label for="source-url" class="form-label">Source URL</label>
+          <input 
+            type="url" 
+            id="source-url" 
+            class="form-input" 
+            placeholder="https://example.com/api/content.json"
+            required
+          >
+          <small style="color: var(--gray-500); font-size: 0.875rem;">
+            Enter the URL of the JSON file you want to parse and display
+          </small>
+        </div>
+
+        <div class="form-group">
+          <button type="button" id="parse-button" class="btn btn-success btn-lg">
+            <span class="btn-text">Parse JSON Content</span>
+            <div class="spinner hidden"></div>
+          </button>
+        </div>
       </form>
-      <div id="output" class="output-container"></div>
-    </div>
 
-    <!-- Buttons -->
-    <div style="display: flex; flex-wrap: wrap">
-      <button
-        style="
-          margin: 10px;
-          padding: 15px 30px;
-          background-color: #ff8c00;
-          color: white;
-          border: none;
-          border-radius: 5px;
-          font-size: 16px;
-          box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
-          transition: transform 0.3s;
-        "
-      >
-        Parse Source
-      </button>
-      <button
-        style="
-          margin: 10px;
-          padding: 15px 30px;
-          background-color: #008080;
-          color: white;
-          border: none;
-          border-radius: 5px;
-          font-size: 16px;
-          box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
-          transition: transform 0.3s;
-        "
-      >
-        String Translator
-      </button>
-      <button
-        style="
-          margin: 10px;
-          padding: 15px 30px;
-          background-color: #ff69b4;
-          color: white;
-          border: none;
-          border-radius: 5px;
-          font-size: 16px;
-          box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
-          transition: transform 0.3s;
-        "
-      >
-        JSON Updater
-      </button>
-      <button
-        style="
-          margin: 10px;
-          padding: 15px 30px;
-          background-color: #6495ed;
-          color: white;
-          border: none;
-          border-radius: 5px;
-          font-size: 16px;
-          box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
-          transition: transform 0.3s;
-        "
-      >
-        Source Updater
-      </button>
-      <button
-        style="
-          margin: 10px;
-          padding: 15px 30px;
-          background-color: #800080;
-          color: white;
-          border: none;
-          border-radius: 5px;
-          font-size: 16px;
-          box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
-          transition: transform 0.3s;
-        "
-      >
-        Interceptor / Translate New Source
-      </button>
-      <button
-        style="
-          margin: 10px;
-          padding: 15px 30px;
-          background-color: #32cd32;
-          color: white;
-          border: none;
-          border-radius: 5px;
-          font-size: 16px;
-          box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
-          transition: transform 0.3s;
-        "
-      >
-        Button 6
-      </button>
-      <button
-        style="
-          margin: 10px;
-          padding: 15px 30px;
-          background-color: #dc143c;
-          color: white;
-          border: none;
-          border-radius: 5px;
-          font-size: 16px;
-          box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
-          transition: transform 0.3s;
-        "
-      >
-        Button 7
-      </button>
-    </div>
+      <!-- Output Container -->
+      <div id="output" class="output-container hidden">
+        <div class="output-label">Parsed JSON Content</div>
+        <pre id="output-content"></pre>
+      </div>
 
-    <style>
-      body {
-        font-family: Arial, sans-serif;
-        background-color: #dbc3c3;
-        margin: 0;
-        padding: 0;
-        color: #d4d4d4;
-      }
+      <!-- Error Container -->
+      <div id="error-message" class="alert alert-error hidden">
+        <strong>Error:</strong> <span id="error-text"></span>
+      </div>
+    </section>
 
-      .container {
-        max-width: 600px;
-        margin: 0 auto;
-        padding: 40px;
-        background-color: #2d2d2d;
-        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-      }
+    <!-- Showcase Section -->
+    <section style="margin-top: 3rem;">
+      <h2 style="text-align: center; color: var(--gray-700); font-size: 1.5rem; font-weight: 600; margin-bottom: 1rem;">
+        🌟 Translation Capabilities Showcase
+      </h2>
+      <p style="text-align: center; color: var(--gray-600); margin-bottom: 2rem; max-width: 600px; margin-left: auto; margin-right: auto;">
+        Explore our comprehensive sample data that demonstrates Ultimate Translator's capabilities across various industries and content types.
+      </p>
+      
+      <div class="nav-grid" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
+        <div class="nav-card showcase-card" data-sample="ecommerce-product">
+          <div class="nav-card-content">
+            <div class="icon">🛍️</div>
+            <h3>E-commerce Product Catalog</h3>
+            <p>Complete product data with pricing, specifications, reviews, and SEO metadata. Perfect for international e-commerce platforms.</p>
+            <div class="showcase-features">
+              <span class="feature-tag">Product Descriptions</span>
+              <span class="feature-tag">SEO Metadata</span>
+              <span class="feature-tag">Customer Reviews</span>
+              <span class="feature-tag">Technical Specs</span>
+            </div>
+            <div class="complexity-badge high">High Complexity</div>
+          </div>
+        </div>
 
-      .title {
-        text-align: center;
-        color: #ffffff;
-        font-size: 32px;
-      }
+        <div class="nav-card showcase-card" data-sample="blog-article">
+          <div class="nav-card-content">
+            <div class="icon">📝</div>
+            <h3>Blog Article & SEO Content</h3>
+            <p>Rich blog content with author information, SEO optimization, and engagement metrics. Ideal for content marketing platforms.</p>
+            <div class="showcase-features">
+              <span class="feature-tag">Long-form Content</span>
+              <span class="feature-tag">Author Bios</span>
+              <span class="feature-tag">SEO Optimization</span>
+              <span class="feature-tag">Social Integration</span>
+            </div>
+            <div class="complexity-badge high">High Complexity</div>
+          </div>
+        </div>
 
-      .description {
-        text-align: center;
-        color: #c8c8c8;
-        font-size: 18px;
-        margin-top: 20px;
-      }
+        <div class="nav-card showcase-card" data-sample="news-article">
+          <div class="nav-card-content">
+            <div class="icon">📰</div>
+            <h3>News & Journalism</h3>
+            <p>Breaking news format with multimedia, quotes, and journalistic structure. Great for media organizations and news platforms.</p>
+            <div class="showcase-features">
+              <span class="feature-tag">Breaking News</span>
+              <span class="feature-tag">Quotes & Attribution</span>
+              <span class="feature-tag">Multimedia Captions</span>
+              <span class="feature-tag">Related Articles</span>
+            </div>
+            <div class="complexity-badge medium">Medium Complexity</div>
+          </div>
+        </div>
 
-      .translate-form {
-        margin-top: 40px;
-      }
+        <div class="nav-card showcase-card" data-sample="restaurant-menu">
+          <div class="nav-card-content">
+            <div class="icon">🍝</div>
+            <h3>Restaurant Menu & Hospitality</h3>
+            <p>Detailed menu with dietary information, wine pairings, and restaurant details. Perfect for hospitality industry localization.</p>
+            <div class="showcase-features">
+              <span class="feature-tag">Menu Items</span>
+              <span class="feature-tag">Dietary Info</span>
+              <span class="feature-tag">Wine Pairings</span>
+              <span class="feature-tag">Restaurant Details</span>
+            </div>
+            <div class="complexity-badge medium">Medium Complexity</div>
+          </div>
+        </div>
 
-      label {
-        display: block;
-        margin-bottom: 8px;
-        color: #ffffff;
-      }
+        <div class="nav-card showcase-card" data-sample="api-documentation">
+          <div class="nav-card-content">
+            <div class="icon">📚</div>
+            <h3>Technical Documentation</h3>
+            <p>API documentation with endpoints, parameters, and examples. Essential for developer resources and technical content.</p>
+            <div class="showcase-features">
+              <span class="feature-tag">Technical Specs</span>
+              <span class="feature-tag">Code Examples</span>
+              <span class="feature-tag">Parameter Docs</span>
+              <span class="feature-tag">Error Messages</span>
+            </div>
+            <div class="complexity-badge high">High Complexity</div>
+          </div>
+        </div>
 
-      select,
-      input[type="text"] {
-        width: 100%;
-        padding: 10px;
-        font-size: 16px;
-        margin-bottom: 16px;
-        background-color: #3a3a3a;
-        color: #d4d4d4;
-        border: none;
-      }
+        <div class="nav-card showcase-card" data-sample="travel-guide">
+          <div class="nav-card-content">
+            <div class="icon">✈️</div>
+            <h3>Travel & Tourism Guide</h3>
+            <p>Comprehensive travel information with attractions, cuisine, and practical tips. Ideal for tourism websites and travel apps.</p>
+            <div class="showcase-features">
+              <span class="feature-tag">Destination Info</span>
+              <span class="feature-tag">Cultural Content</span>
+              <span class="feature-tag">Local Recommendations</span>
+              <span class="feature-tag">Travel Logistics</span>
+            </div>
+            <div class="complexity-badge high">High Complexity</div>
+          </div>
+        </div>
+      </div>
 
-      button[type="button"] {
-        background-color: #4caf50;
-        color: #ffffff;
-        border: none;
-        padding: 12px 20px;
-        font-size: 16px;
-        cursor: pointer;
-      }
+      <!-- Sample Data Viewer -->
+      <div id="sample-viewer" class="hidden" style="margin-top: 2rem;">
+        <div style="background: var(--gray-50); border: 1px solid var(--gray-200); border-radius: 8px; padding: 1.5rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h3 id="sample-title" style="color: var(--gray-700); font-size: 1.125rem; font-weight: 600; margin: 0;">
+              Sample Data Preview
+            </h3>
+            <div style="display: flex; gap: 0.5rem;">
+              <button id="copy-sample-url" class="btn btn-secondary" style="font-size: 0.75rem; padding: 0.5rem 0.75rem;">
+                📋 Copy URL
+              </button>
+              <button id="close-sample-viewer" class="btn btn-secondary" style="font-size: 0.75rem; padding: 0.5rem 0.75rem;">
+                ✕ Close
+              </button>
+            </div>
+          </div>
+          
+          <div style="margin-bottom: 1rem;">
+            <strong>API Endpoint:</strong> 
+            <code id="sample-url" style="background: var(--gray-100); padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.875rem;"></code>
+          </div>
+          
+          <div style="margin-bottom: 1rem;">
+            <strong>Translation Features:</strong>
+            <div id="sample-features" style="margin-top: 0.5rem;"></div>
+          </div>
+          
+          <textarea 
+            id="sample-data-preview" 
+            readonly
+            style="width: 100%; height: 300px; font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace; font-size: 0.875rem; background: white; border: 1px solid var(--gray-300); border-radius: 4px; padding: 1rem; resize: vertical;"
+            placeholder="Sample data will appear here..."
+          ></textarea>
+          
+          <div style="margin-top: 1rem; text-align: center;">
+            <button id="try-sample-btn" class="btn btn-primary">
+              🚀 Try This Sample in Page Translator
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
 
-      #interceptor-button {
-        border-radius: 10px;
-      }
+    <!-- Main Navigation Grid -->
+    <section style="margin-top: 3rem;">
+      <h2 style="text-align: center; color: var(--gray-700); font-size: 1.5rem; font-weight: 600; margin-bottom: 2rem;">
+        🛠️ Translation Tools
+      </h2>
+    </section>
+  </div>
 
-      #string-button {
-        background-color: #aa2add;
-      }
-
-      button[type="button"]:hover {
-        background-color: #45a049;
-      }
-
-      .output-container {
-        margin-top: 40px;
-        background-color: #2d2d2d;
-        padding: 20px;
-        overflow: auto;
-        max-height: 400px;
-      }
-
-      pre {
-        white-space: pre-wrap;
-        overflow-wrap: break-word;
-        font-family: Consolas, monospace;
-        font-size: 14px;
-        line-height: 1.5;
-        color: #d4d4d4;
-        margin: 0;
-        padding: 0;
-      }
-    </style>
-
-    <script>
-      function translate() {
-        var language = $("#language").val();
-        var modelName = $("#model-name").val();
-        var id = $("#id").val();
-        var sourceUrl = $("#source-url").val();
-
-        $.ajax({
-          url: "/api/v1/getJsonContent",
-          method: "GET",
-          data: {
-            sourceUrl,
-          },
-          dataType: "json",
-          success: function (response) {
-            // Beautify the JSON response
-            var jsonOutput = js_beautify(JSON.stringify(response), {
-              indent_size: 2,
-              space_in_empty_paren: true,
-            });
-
-            // Display the beautified JSON output in the output div
-            $("#output").html("<pre>" + jsonOutput + "</pre>");
-          },
-          error: function () {
-            $("#output").text("Failed to retrieve JSON data");
-          },
-        });
-      }
-
-      // Attach click event listener to the Translate button
-      $(document).ready(function () {
-        $("#translate-button").click(translate);
-      });
-    </script>
-  </body>
+  <!-- JavaScript -->
+  <script src="js/index.js"></script>
+</body>
 </html>

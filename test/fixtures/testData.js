@@ -178,7 +178,7 @@ const testData = {
 
   // Test URLs for JSON fetching
   testUrls: {
-    valid: "https://jsonplaceholder.typicode.com/posts/1",
+    valid: "http://localhost:3000/api/v1/sample/ecommerce-product",
     invalidDomain: "https://invalid-domain-12345.com/test.json",
     malformed: "not-a-url-at-all"
   }

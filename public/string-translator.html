@@ -1,160 +1,209 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <title>The Inceptor Json Parser</title>
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/js-beautify/1.14.8/beautify.min.js"></script>
-  </head>
-  <body>
-    <div class="container">
-      <h1 class="title">
-        The <span style="color: #fc4a1d"> "STRING"</span> Translator
-      </h1>
-      <p class="description">Parse Web content with ease</p>
-      <a href="interceptor.html">
-        <button type="button" id="interceptor-button">Open Interceptor</button>
-      </a>
-      <a href="string-translator.html">
-        <button type="button" id="string-button">String Translator</button>
-      </a>
-      <form class="translate-form">
-        <label for="language">Select Language:</label>
-        <select id="language" name="language">
-          <option value="de">Germany</option>
-          <option value="fr">French</option>
-        </select>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Text Translation - Ultimate Translator</title>
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- External Libraries -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/js-beautify/1.14.8/beautify.min.js"></script>
+  
+  <!-- Custom Styles -->
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <div class="container">
+    <!-- Header Section -->
+    <header class="header">
+      <h1>Text <span class="accent">Translation</span></h1>
+      <p class="subtitle">Quick and accurate translation powered by AI</p>
+      
+      <!-- Navigation -->
+      <div style="margin-top: 1.5rem; display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+        <a href="index.html" class="btn btn-secondary">← Back to Home</a>
+        <a href="interceptor.html" class="btn btn-secondary">Page Translation</a>
+      </div>
+    </header>
 
-        <label for="string-data">String/Text:</label>
-        <input
-          type="text"
-          id="string-data"
-          name="string-data"
-          placeholder="Enter Text"
-        />
-        <button type="button" id="translate-button">Translate Now</button>
+    <!-- Translation Form -->
+    <section class="form-container">
+      <h2 class="form-title">Translate Text</h2>
+      
+      <!-- Progress Indicator -->
+      <div id="progress-indicator" class="progress-container">
+        <div class="progress-step active" data-step="1">
+          <div class="step-number">1</div>
+          <div class="step-label">Input Text</div>
+        </div>
+        <div class="progress-line"></div>
+        <div class="progress-step" data-step="2">
+          <div class="step-number">2</div>
+          <div class="step-label">Translate</div>
+        </div>
+        <div class="progress-line"></div>
+        <div class="progress-step" data-step="3">
+          <div class="step-number">3</div>
+          <div class="step-label">Use Result</div>
+        </div>
+      </div>
+      
+      <form class="translation-form">
+        <!-- Language Selection -->
+        <div class="form-group">
+          <label for="language" class="form-label">Target Language</label>
+          <select id="language" class="form-select" required>
+            <option value="">Select target language</option>
+            <option value="en">English</option>
+            <option value="es">Spanish (Español)</option>
+            <option value="fr">French (Français)</option>
+            <option value="de">German (Deutsch)</option>
+            <option value="it">Italian (Italiano)</option>
+            <option value="pt">Portuguese (Português)</option>
+            <option value="ru">Russian (Русский)</option>
+            <option value="ja">Japanese (日本語)</option>
+            <option value="ko">Korean (한국어)</option>
+            <option value="zh">Chinese (中文)</option>
+            <option value="ar">Arabic (العربية)</option>
+            <option value="hi">Hindi (हिन्दी)</option>
+          </select>
+        </div>
+
+        <!-- Text Input -->
+        <div class="form-group">
+          <label for="string-data" class="form-label">Text to Translate</label>
+          <textarea 
+            id="string-data" 
+            class="form-textarea" 
+            placeholder="Enter the text you want to translate..."
+            rows="6"
+            required
+          ></textarea>
+          <small style="color: var(--gray-500); font-size: 0.875rem;">
+            Maximum 50,000 characters
+          </small>
+        </div>
+
+        <!-- Translate Button -->
+        <div class="form-group">
+          <button type="button" id="translate-button" class="btn btn-success btn-lg">
+            <span class="btn-text">Translate Text</span>
+            <div class="spinner hidden"></div>
+          </button>
+        </div>
       </form>
-      <div id="output" class="output-container"></div>
-    </div>
 
-    <style>
-      body {
-        font-family: Arial, sans-serif;
-        background-color: #dbc3c3;
-        margin: 0;
-        padding: 0;
-        color: #d4d4d4;
-      }
+      <!-- Translation Result -->
+      <div id="translation-result" class="hidden" style="margin-top: 2rem;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1rem;">
+          <div>
+            <h3 style="color: var(--gray-600); font-size: 0.875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem;">Original Text</h3>
+            <div id="original-text" class="output-container" style="min-height: 120px;">
+              <pre id="original-content"></pre>
+            </div>
+          </div>
+          <div>
+            <h3 style="color: var(--gray-600); font-size: 0.875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem;">Translation</h3>
+            <div id="translated-text" class="output-container" style="min-height: 120px;">
+              <pre id="translated-content"></pre>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Translation Info -->
+        <div id="translation-info" class="alert" style="background: var(--gray-50); border: 1px solid var(--gray-200); color: var(--gray-700);">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+            <div>
+              <strong>Translation Provider:</strong> <span id="provider-info">-</span>
+            </div>
+            <div>
+              <strong>Target Language:</strong> <span id="language-info">-</span>
+            </div>
+            <button type="button" id="copy-translation" class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.75rem;">
+              Copy Translation
+            </button>
+          </div>
+        </div>
+        
+        <!-- Next Steps Guide -->
+        <div id="next-steps" class="next-steps-container">
+          <h3>🎉 Translation Complete! What's Next?</h3>
+          <div class="next-steps-grid">
+            <div class="next-step-card" data-action="translate-page">
+              <div class="step-icon">🌐</div>
+              <h4>Translate Full Pages</h4>
+              <p>Translate entire JSON content or web pages</p>
+              <button class="btn btn-primary btn-sm">Page Translator</button>
+            </div>
+            <div class="next-step-card" data-action="translate-another">
+              <div class="step-icon">🔄</div>
+              <h4>Translate Another Text</h4>
+              <p>Clear form and translate different text</p>
+              <button class="btn btn-primary btn-sm">New Translation</button>
+            </div>
+            <div class="next-step-card" data-action="manage-translations">
+              <div class="step-icon">📝</div>
+              <h4>Manage Translations</h4>
+              <p>View and manage your translation history</p>
+              <button class="btn btn-primary btn-sm">Manage Translations</button>
+            </div>
+            <div class="next-step-card" data-action="home">
+              <div class="step-icon">🏠</div>
+              <h4>Explore More Tools</h4>
+              <p>Return to main page and explore other features</p>
+              <button class="btn btn-primary btn-sm">Back to Home</button>
+            </div>
+          </div>
+        </div>
+      </div>
 
-      .container {
-        max-width: 600px;
-        margin: 0 auto;
-        padding: 40px;
-        background-color: #2d2d2d;
-        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-      }
+      <!-- Error Container -->
+      <div id="error-message" class="alert alert-error hidden">
+        <strong>Error:</strong> <span id="error-text"></span>
+      </div>
+    </section>
 
-      .title {
-        text-align: center;
-        color: #ffffff;
-        font-size: 32px;
-      }
+    <!-- Features Section -->
+    <section style="margin-top: 3rem;">
+      <div class="nav-grid" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));">
+        <div class="nav-card">
+          <div class="nav-card-content">
+            <div class="icon">🔤</div>
+            <h3>Multiple Languages</h3>
+            <p>Support for 12+ languages including major European, Asian, and Arabic languages.</p>
+          </div>
+        </div>
+        <div class="nav-card">
+          <div class="nav-card-content">
+            <div class="icon">⚡</div>
+            <h3>Fast Translation</h3>
+            <p>Get instant translations powered by advanced AI models with high accuracy.</p>
+          </div>
+        </div>
+        <div class="nav-card">
+          <div class="nav-card-content">
+            <div class="icon">🔒</div>
+            <h3>Secure & Private</h3>
+            <p>Your text is processed securely and not stored on our servers.</p>
+          </div>
+        </div>
+        <div class="nav-card">
+          <div class="nav-card-content">
+            <div class="icon">📋</div>
+            <h3>Easy Copy</h3>
+            <p>One-click copy functionality to quickly use your translations.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
 
-      .description {
-        text-align: center;
-        color: #c8c8c8;
-        font-size: 18px;
-        margin-top: 20px;
-      }
-
-      .translate-form {
-        margin-top: 40px;
-      }
-
-      label {
-        display: block;
-        margin-bottom: 8px;
-        color: #ffffff;
-      }
-
-      select,
-      input[type="text"] {
-        width: 100%;
-        padding: 10px;
-        font-size: 16px;
-        margin-bottom: 16px;
-        background-color: #3a3a3a;
-        color: #d4d4d4;
-        border: none;
-      }
-
-      button[type="button"] {
-        background-color: #4caf50;
-        color: #ffffff;
-        border: none;
-        padding: 12px 20px;
-        font-size: 16px;
-        cursor: pointer;
-      }
-
-      #interceptor-button {
-        border-radius: 10px;
-      }
-
-      #string-button {
-        background-color: #1983ca;
-      }
-
-      button[type="button"]:hover {
-        background-color: #45a049;
-      }
-
-      .output-container {
-        margin-top: 40px;
-        background-color: #2d2d2d;
-        padding: 20px;
-        overflow: auto;
-        max-height: 400px;
-      }
-
-      pre {
-        white-space: pre-wrap;
-        overflow-wrap: break-word;
-        font-family: Consolas, monospace;
-        font-size: 14px;
-        line-height: 1.5;
-        color: #d4d4d4;
-        margin: 0;
-        padding: 0;
-      }
-    </style>
-
-    <script>
-      function translate() {
-        var language = $("#language").val();
-        var text = $("#string-data").val();
-
-        $.ajax({
-          url: "/api/v1/translate-text",
-          method: "POST",
-          data: {
-            language,
-            text,
-          },
-          dataType: "json",
-          success: function (response) {
-            // Display the beautified JSON output in the output div
-            $("#output").html("<pre>" + response + "</pre>");
-          },
-          error: function () {
-            $("#output").text("Failed to retrieve Translated data");
-          },
-        });
-      }
-
-      // Attach click event listener to the Translate button
-      $(document).ready(function () {
-        $("#translate-button").click(translate);
-      });
-    </script>
-  </body>
+  <!-- JavaScript -->
+  <script src="js/string-translator.js"></script>
+</body>
 </html>
