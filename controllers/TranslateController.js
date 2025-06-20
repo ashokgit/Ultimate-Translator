@@ -4,109 +4,133 @@ const compareService = require("../services/JsonCompareUpdateService");
 const filterTranslation = require("../services/FilterTranslationService");
 const getTranslationByUrl = require("../services/FilterByUrlService");
 const logger = require("../utils/logger");
+const { successResponse, NotFoundError, ValidationError } = require("../utils/errorHandler");
 
 const translateController = {
   translatePage: async (req, res) => {
-    try {
-      const { model_name, language, source_url, content_id } = req.query;
+    const { model_name, language, source_url, content_id } = req.query;
 
-      const translationService = new PageTranslationService(
-        model_name,
-        language
-      );
-      const savedPage = await translationService.translatePage(
-        source_url,
-        content_id
-      );
-      logger.info("Page translation completed", {
+    const translationService = new PageTranslationService(
+      model_name,
+      language
+    );
+    const savedPage = await translationService.translatePage(
+      source_url,
+      content_id
+    );
+    
+    logger.info("Page translation completed", {
+      contentId: content_id,
+      modelName: model_name,
+      language: language,
+      sourceUrl: source_url
+    });
+    
+    const response = successResponse(
+      savedPage,
+      "Page translation completed successfully",
+      {
         contentId: content_id,
         modelName: model_name,
-        language: language,
-        sourceUrl: source_url
-      });
-      
-      return res.status(200).json(savedPage);
-    } catch (error) {
-      logger.error("Error translating page", {
-        contentId: content_id,
-        modelName: model_name,
-        language: language,
-        sourceUrl: source_url,
-        error: error.message
-      });
-      
-      res.status(500).json({ error: "Translation failed. Please try again later." });
-    }
+        targetLanguage: language
+      }
+    );
+    
+    return res.status(200).json(response);
   },
 
   updateTranslation: async (req, res) => {
-    try {
-      const { content_id, model_name, language, updatedJson } = req.body;
+    const { content_id, model_name, language, updatedJson } = req.body;
 
-      const existingTranslatedPage = await TranslatedPage.findOne({
-        content_id: content_id,
-        model_name: model_name,
+    const existingTranslatedPage = await TranslatedPage.findOne({
+      content_id: content_id,
+      model_name: model_name,
+    });
+
+    if (!existingTranslatedPage) {
+      throw new NotFoundError("Translation");
+    }
+
+    // Update the translation for the specified language
+    const translations = existingTranslatedPage.translations;
+    const existingTranslation =
+      translations &&
+      translations.find((translation) => {
+        return Object.keys(translation)[0] === language;
       });
 
-      if (!existingTranslatedPage) {
-        return res
-          .status(404)
-          .json({ success: false, error: "Translation not found" });
-      }
+    if (!existingTranslation) {
+      throw new NotFoundError(`Translation for language '${language}'`);
+    }
 
-      // Update the translation for the specified language
-      const translations = existingTranslatedPage.translations;
-      const existingTranslation =
-        translations &&
-        translations.find((translation) => {
-          return Object.keys(translation)[0] === language;
-        });
+    // Parse and validate JSON
+    let parsedJson;
+    try {
+      parsedJson = JSON.parse(updatedJson);
+    } catch (parseError) {
+      throw new ValidationError("Invalid JSON format in updatedJson");
+    }
 
-      if (!existingTranslation) {
-        return res
-          .status(404)
-          .json({ success: false, error: "Language translation not found" });
-      }
+    existingTranslation[language] = parsedJson;
+    existingTranslatedPage.markModified("translations");
+    await existingTranslatedPage.save();
 
-      existingTranslation[language] = JSON.parse(updatedJson);
-      existingTranslatedPage.markModified("translations");
-      await existingTranslatedPage.save();
+    logger.info("Translation updated successfully", {
+      contentId: content_id,
+      modelName: model_name,
+      language: language
+    });
 
-      return res
-        .status(200)
-        .json({ success: true, data: existingTranslatedPage });
-    } catch (error) {
-      logger.error("Failed to update translation", {
+    const response = successResponse(
+      existingTranslatedPage,
+      "Translation updated successfully",
+      {
         contentId: content_id,
         modelName: model_name,
         language: language,
-        error: error.message
-      });
-      
-      return res
-        .status(500)
-        .json({ success: false, error: "Failed to update translation" });
-    }
+        updatedAt: new Date().toISOString()
+      }
+    );
+
+    return res.status(200).json(response);
   },
 
   translationFilter: async (req, res) => {
     const filterResponse = await filterTranslation(req);
 
-    if (filterResponse.success) {
-      res.status(200).json(filterResponse.data);
-    } else {
-      res.status(404).json({ error: filterResponse.error });
+    if (!filterResponse.success) {
+      throw new NotFoundError("Translation");
     }
+
+    const response = successResponse(
+      filterResponse.data,
+      "Translation filter results",
+      {
+        filters: req.query,
+        resultCount: Array.isArray(filterResponse.data) ? filterResponse.data.length : 1
+      }
+    );
+
+    res.status(200).json(response);
   },
 
   filterByUrl: async (req, res) => {
     const filterResponse = await getTranslationByUrl(req);
 
-    if (filterResponse.success) {
-      res.status(200).json(filterResponse.data);
-    } else {
-      res.status(404).json({ error: filterResponse.error });
+    if (!filterResponse.success) {
+      throw new NotFoundError("Translation for the specified URL");
     }
+
+    const response = successResponse(
+      filterResponse.data,
+      "URL-based translation filter results",
+      {
+        filters: req.query,
+        resultCount: Array.isArray(filterResponse.data) ? filterResponse.data.length : 1
+      }
+    );
+
+    res.status(200).json(response);
   },
 };
 

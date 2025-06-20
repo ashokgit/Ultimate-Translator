@@ -1,6 +1,7 @@
 const axios = require("axios");
 const config = require("../config");
 const logger = require("../utils/logger");
+const { TranslationError } = require("../utils/errorHandler");
 
 class HuggingFaceTranslator {
   constructor(translatorUrl) {
@@ -62,7 +63,16 @@ class HuggingFaceTranslator {
         apiUrl: this.translatorUrl
       });
       
-      throw error;
+      if (error.response) {
+        // API responded with error status
+        throw new TranslationError('HuggingFace', `API error: ${error.response.status} - ${error.response.data?.message || error.message}`);
+      } else if (error.request) {
+        // Request was made but no response received
+        throw new TranslationError('HuggingFace', 'Service unavailable - no response from translation service');
+      } else {
+        // Something else happened
+        throw new TranslationError('HuggingFace', error.message);
+      }
     }
   }
 }

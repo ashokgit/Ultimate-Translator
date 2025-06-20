@@ -1,17 +1,6 @@
-const Joi = require("joi");
+// DEPRECATED: Use utils/validation.js validators instead
+const { validators } = require("../utils/validation");
 
-const validateStringTranslation = (req, res, next) => {
-  const schema = Joi.object({
-    language: Joi.required(),
-    text: Joi.string().required(),
-  });
-
-  const { error } = schema.validate(req.body);
-  if (error) {
-    return res.status(422).json({ error: error.details[0].message });
-  }
-
-  next();
-};
+const validateStringTranslation = validators.stringTranslation;
 
 module.exports = { validateStringTranslation };

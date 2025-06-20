@@ -1,6 +1,8 @@
 const express = require("express");
 const router = express.Router();
 const logger = require("../utils/logger");
+const { validators } = require("../utils/validation");
+const { asyncHandler } = require("../utils/errorHandler");
 
 //Imports from Controller
 const {
@@ -23,52 +25,67 @@ const {
   updateTranslationUrl,
 } = require("../controllers/TranslationUrlController");
 
-//Import Validations
-
-const {
-  validateStringTranslation,
-} = require("../validations/stringTranslatorValidate");
-const {
-  validateUpdateTranslation,
-} = require("../validations/updateTranslationValidate");
-const { validateSourceChange } = require("../validations/changeSourceValidate");
-const {
-  validateUpdateUrl,
-} = require("../validations/validateUpdateTranslationUrl");
-
-// Define API routes
-router.get("/translation-filter", translationFilter);
-router.get("/filter-by-url", filterByUrl);
-
-router.get("/translate", translatePage);
-router.post(
-  "/update-translation",
-  validateUpdateTranslation,
-  updateTranslation
+// Define API routes with new validation system
+router.get("/translation-filter", 
+  validators.translationFilter, 
+  asyncHandler(translationFilter)
 );
 
-router.put("/update-source", validateSourceChange, changeSource);
+router.get("/filter-by-url", 
+  validators.translationFilter, 
+  asyncHandler(filterByUrl)
+);
 
-router.post("/translate-text", validateStringTranslation, translateString);
-router.get("/get-list", filterList);
-router.get("/get-available-language", availableLanguages);
+router.get("/translate", 
+  validators.pageTranslation, 
+  asyncHandler(translatePage)
+);
 
-router.put("/update-translation-url", validateUpdateUrl, updateTranslationUrl);
+router.post("/update-translation",
+  validators.updateTranslation,
+  asyncHandler(updateTranslation)
+);
 
-router.get("/getJsonContent", async (req, res) => {
-  try {
-    const sourceUrl = req.query.sourceUrl;
-    const response = await axios.get(sourceUrl);
+router.put("/update-source", 
+  validators.sourceChange, 
+  asyncHandler(changeSource)
+);
+
+router.post("/translate-text", 
+  validators.stringTranslation, 
+  asyncHandler(translateString)
+);
+
+router.get("/get-list", 
+  asyncHandler(filterList)
+);
+
+router.get("/get-available-language", 
+  validators.availableLanguages, 
+  asyncHandler(availableLanguages)
+);
+
+router.put("/update-translation-url", 
+  validators.translationUrlUpdate, 
+  asyncHandler(updateTranslationUrl)
+);
+
+router.get("/getJsonContent", 
+  validators.availableLanguages, // Reuse URL validation
+  asyncHandler(async (req, res) => {
+    const sourceUrl = req.query.source_url;
+    const response = await axios.get(sourceUrl, {
+      timeout: 30000, // 30 second timeout
+      maxContentLength: 10 * 1024 * 1024, // 10MB limit
+    });
+
+    logger.info("JSON content fetched successfully", {
+      sourceUrl,
+      contentLength: JSON.stringify(response.data).length
+    });
 
     res.json(response.data);
-  } catch (error) {
-    logger.error("Failed to fetch JSON content", {
-      sourceUrl: sourceUrl,
-      error: error.message
-    });
-    
-    res.status(500).json({ error: "Failed to fetch data" });
-  }
-});
+  })
+);
 
 module.exports = router;

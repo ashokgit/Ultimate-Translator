@@ -1,6 +1,7 @@
 const axios = require("axios");
 const config = require("../config");
 const logger = require("../utils/logger");
+const { TranslationError } = require("../utils/errorHandler");
 
 class OpenAITranslator {
   constructor() {
@@ -80,7 +81,24 @@ class OpenAITranslator {
         model: this.model
       });
       
-      throw new Error(`OpenAI translation failed: ${error.message}`);
+      if (error.response) {
+        const status = error.response.status;
+        const message = error.response.data?.error?.message || error.message;
+        
+        if (status === 401) {
+          throw new TranslationError('OpenAI', 'Invalid API key');
+        } else if (status === 429) {
+          throw new TranslationError('OpenAI', 'Rate limit exceeded');
+        } else if (status >= 500) {
+          throw new TranslationError('OpenAI', 'Service temporarily unavailable');
+        } else {
+          throw new TranslationError('OpenAI', `API error: ${message}`);
+        }
+      } else if (error.request) {
+        throw new TranslationError('OpenAI', 'Service unavailable - no response from OpenAI');
+      } else {
+        throw new TranslationError('OpenAI', error.message);
+      }
     }
   }
 }

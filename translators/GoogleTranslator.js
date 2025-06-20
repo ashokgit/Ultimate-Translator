@@ -2,6 +2,7 @@ const { translate } = require("@vitalets/google-translate-api");
 const { ProxyAgent } = require("proxy-agent");
 const config = require("../config");
 const logger = require("../utils/logger");
+const { TranslationError } = require("../utils/errorHandler");
 
 class GoogleTranslator {
   constructor() {
@@ -57,7 +58,7 @@ class GoogleTranslator {
         targetLanguage
       });
       
-      throw new Error(`Google translation failed: ${error.message}`);
+      throw new TranslationError('Google', error.message);
     }
   }
 
