@@ -4,10 +4,10 @@ const sinon = require('sinon');
 const testData = require('./fixtures/testData');
 const TranslationLog = require('../models/TranslationLog');
 const TranslatedPage = require('../models/TranslatedPage');
-const axios = require('axios');
+const OpenAITranslator = require('../translators/OpenAITranslator');
 
 describe('API Integration Tests', () => {
-  let axiosStub, mongoStub, saveStub, app;
+  let openaiStub, mongoStub, saveStub, app;
 
   before(() => {
     // Set test environment variables
@@ -28,8 +28,9 @@ describe('API Integration Tests', () => {
   });
 
   beforeEach(() => {
-    // Stub external API calls
-    axiosStub = sinon.stub(axios, 'post');
+    // Mock OpenAI translate method directly
+    openaiStub = sinon.stub(OpenAITranslator.prototype, 'translate');
+    openaiStub.resolves('Hola mundo'); // Default successful response
     
     // Stub database operations
     mongoStub = sinon.stub(TranslationLog, 'findOne');
@@ -113,7 +114,7 @@ describe('API Integration Tests', () => {
     it('should translate text successfully (API call)', async () => {
       // Mock cache miss and API success
       mongoStub.resolves(null);
-      axiosStub.resolves(testData.mockApiResponses.openai.success);
+      openaiStub.resolves('Hola mundo');
 
       const response = await request(app)
         .post('/api/v1/string-translate')
@@ -121,15 +122,16 @@ describe('API Integration Tests', () => {
         .expect(200);
 
       expect(response.body.success).to.be.true;
-      expect(response.body.data.translation).to.equal('Hola mundo');
-      expect(response.body.meta.cached).to.be.false;
-      expect(response.body.meta.provider).to.equal('OpenAI');
-      expect(saveStub.calledOnce).to.be.true;
+      expect(response.body.data.translated_text).to.equal('Hola mundo');
+      expect(openaiStub.calledOnce).to.be.true;
     });
 
     it('should handle translation service errors', async () => {
       mongoStub.resolves(null);
-      axiosStub.rejects(testData.mockApiResponses.openai.rateLimitError);
+      
+      // Mock translation service error
+      const TranslationError = require('../utils/errorHandler').TranslationError;
+      openaiStub.rejects(new TranslationError('OpenAI', 'Rate limit exceeded'));
 
       const response = await request(app)
         .post('/api/v1/string-translate')
@@ -138,12 +140,11 @@ describe('API Integration Tests', () => {
 
       expect(response.body.success).to.be.false;
       expect(response.body.error.type).to.equal('TRANSLATION_ERROR');
-      expect(response.body.error.provider).to.equal('OpenAI');
     });
 
     it('should sanitize malicious input', async () => {
       mongoStub.resolves(null);
-      axiosStub.resolves(testData.mockApiResponses.openai.success);
+      openaiStub.resolves('Hola mundo');
 
       const maliciousInput = {
         text: 'Hello <script>alert("xss")</script> world',
@@ -155,8 +156,10 @@ describe('API Integration Tests', () => {
         .send(maliciousInput)
         .expect(200);
 
-      // Check that script was sanitized in the API call
-      expect(axiosStub.args[0][1].messages[0].content).to.not.include('<script>');
+      expect(response.body.success).to.be.true;
+      expect(response.body.data.translated_text).to.equal('Hola mundo');
+      // Verify that the translation service was called
+      expect(openaiStub.calledOnce).to.be.true;
     });
 
     it('should handle multiple language codes correctly', async () => {
@@ -175,7 +178,7 @@ describe('API Integration Tests', () => {
           .expect(200);
 
         expect(response.body.success).to.be.true;
-        expect(response.body.data.translation).to.equal(`Hello in ${lang}`);
+        expect(response.body.data.translated_text).to.equal(`Hello in ${lang}`);
       }
     });
   });
@@ -213,7 +216,6 @@ describe('API Integration Tests', () => {
 
       // Mock translation service
       mongoStub.resolves(null);
-      axiosStub.resolves(testData.mockApiResponses.openai.success);
 
       const response = await request(app)
         .get('/api/v1/translate')

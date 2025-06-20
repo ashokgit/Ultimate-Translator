@@ -1,0 +1,32 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    ports:
+      - "${PORT:-3000}:${PORT:-3000}"
+    volumes:
+      - ./logs:/app/logs
+    environment:
+      - NODE_ENV=development
+      - MONGODB_URI=mongodb://mongo:27017/ultimate_translator
+    depends_on:
+      - mongo
+    networks:
+      - translator-network
+
+  mongo:
+    image: mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - translator-network
+
+volumes:
+  mongo_data:
+
+networks:
+  translator-network:
+    driver: bridge 

@@ -1,4 +1,4 @@
-const { translate } = require("@vitalets/google-translate-api");
+const googleTranslate = require("@vitalets/google-translate-api");
 const { ProxyAgent } = require("proxy-agent");
 const config = require("../config");
 const logger = require("../utils/logger");
@@ -32,7 +32,7 @@ class GoogleTranslator {
         proxyUrl: proxyUrl ? proxyUrl.replace(/\/\/.*@/, '//***:***@') : null
       });
       
-      const { text } = await translate(originalString, {
+      const { text } = await googleTranslate.translate(originalString, {
         to: targetLanguage,
         agent,
       });

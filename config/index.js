@@ -1,5 +1,3 @@
-require('dotenv').config();
-
 const config = {
   // Server Configuration
   server: {
@@ -57,9 +55,11 @@ const config = {
 };
 
 // Validation
-if (config.translation.defaultProvider === 'openai' && !config.openai.apiKey) {
-  console.error('ERROR: OPENAI_API_KEY is required when using OpenAI as default translator');
-  process.exit(1);
+if (process.env.NODE_ENV !== 'test') {
+  if (config.translation.defaultProvider === 'openai' && !config.openai.apiKey) {
+    console.error('ERROR: OPENAI_API_KEY is required when using OpenAI as default translator');
+    process.exit(1);
+  }
 }
 
 module.exports = config; 

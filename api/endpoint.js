@@ -11,7 +11,7 @@ const {
   updateTranslation,
   filterByUrl,
 } = require("../controllers/TranslateController");
-const { default: axios } = require("axios");
+const axios = require("axios");
 const { changeSource } = require("../controllers/SourceController");
 const {
   translateString,
@@ -86,5 +86,14 @@ router.get("/getJsonContent",
     res.json(response.data);
   })
 );
+
+// Simple health check endpoint
+router.get("/health", (req, res) => {
+  res.status(200).json({ 
+    status: "healthy", 
+    timestamp: new Date().toISOString(),
+    service: "ultimate-translator"
+  });
+});
 
 module.exports = router;

@@ -1,3 +1,5 @@
+const { OpenAI } = require('openai');
+
 // Test data fixtures to avoid API calls during testing
 const testData = {
   // Sample translation requests
@@ -136,36 +138,24 @@ const testData = {
   mockApiResponses: {
     openai: {
       success: {
-        data: {
-          choices: [{
-            message: {
-              content: "Hola mundo"
-            }
-          }],
-          usage: {
-            total_tokens: 15
+        choices: [{
+          message: {
+            content: "Hola mundo"
           }
+        }],
+        usage: {
+          total_tokens: 15
         }
       },
       rateLimitError: {
-        response: {
-          status: 429,
-          data: {
-            error: {
-              message: "Rate limit exceeded"
-            }
-          }
-        }
+        status: 429,
+        message: "Rate limit exceeded",
+        name: "APIError"
       },
       invalidApiKey: {
-        response: {
-          status: 401,
-          data: {
-            error: {
-              message: "Invalid API key"
-            }
-          }
-        }
+        status: 401,
+        message: "Invalid API key",
+        name: "APIError"
       }
     },
     google: {
