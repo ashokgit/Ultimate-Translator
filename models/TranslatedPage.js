@@ -25,7 +25,19 @@ const translatedPageSchema = new mongoose.Schema({
     type: [Object],
     required: true,
   },
+  metadata: {
+    type: Object,
+    required: false,
+    default: {}
+  }
+}, {
+  timestamps: true // Adds createdAt and updatedAt automatically
 });
+
+// Add indexes for better query performance
+translatedPageSchema.index({ content_id: 1, model_name: 1 });
+translatedPageSchema.index({ source_url: 1 });
+translatedPageSchema.index({ last_requested_at: 1 });
 
 const TranslatedPage = mongoose.model("TranslatedPage", translatedPageSchema);
 

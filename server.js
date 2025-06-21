@@ -8,6 +8,7 @@ const { globalErrorHandler } = require("./utils/errorHandler");
 const { requestSizeLimiter } = require("./utils/validation");
 const connectDB = require("./db/connect");
 const apiRoutes = require("./api/endpoint");
+const { initializeConfig } = require("./helpers/stringHelpers");
 const path = require("path");
 const bodyParser = require("body-parser");
 
@@ -47,6 +48,11 @@ app.use((req, res, next) => {
 
 // Connect to MongoDB
 connectDB();
+
+// Initialize translation configuration service
+initializeConfig().catch(error => {
+  logger.error("Failed to initialize translation configuration", { error: error.message });
+});
 
 // Security and validation middleware
 app.use(requestSizeLimiter('10mb'));

@@ -24,6 +24,8 @@ const {
 const {
   updateTranslationUrl,
 } = require("../controllers/TranslationUrlController");
+const sampleController = require("../controllers/SampleController");
+const translationConfigController = require("../controllers/TranslationConfigController");
 
 // Sample Data for Ultimate Translator Showcase
 const sampleData = {
@@ -447,6 +449,49 @@ router.get("/available-languages",
 router.put("/update-translation-url", 
   validators.translationUrlUpdate, 
   asyncHandler(updateTranslationUrl)
+);
+
+// Enhanced Sample Data Routes with Intelligent Processing
+router.get("/sample/generate", 
+  validators.pageTranslation, 
+  asyncHandler(sampleController.generateSample)
+);
+
+router.get("/sample/types", 
+  asyncHandler(sampleController.getSampleTypes)
+);
+
+router.get("/sample/quality", 
+  asyncHandler(sampleController.getQualityMetrics)
+);
+
+// Translation Configuration Management Routes
+router.get("/config/translation", 
+  asyncHandler(translationConfigController.getConfiguration)
+);
+
+router.post("/config/translation/rules", 
+  asyncHandler(translationConfigController.addRule)
+);
+
+router.get("/config/translation/analytics", 
+  asyncHandler(translationConfigController.getAnalytics)
+);
+
+router.post("/config/translation/test", 
+  asyncHandler(translationConfigController.testRules)
+);
+
+router.get("/config/translation/patterns", 
+  asyncHandler(translationConfigController.getAutoDetectedPatterns)
+);
+
+router.put("/config/translation/auto-detection", 
+  asyncHandler(translationConfigController.updateAutoDetectionSettings)
+);
+
+router.get("/config/translation/recommendations", 
+  asyncHandler(translationConfigController.getRecommendedPatterns)
 );
 
 router.get("/getJsonContent", 
