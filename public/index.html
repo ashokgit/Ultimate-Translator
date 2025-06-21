@@ -27,16 +27,6 @@
 
     <!-- Navigation Cards -->
     <div class="nav-grid">
-      <!-- JSON Content Parser -->
-      <div class="nav-card">
-        <div class="nav-card-content">
-          <div class="icon">🌐</div>
-          <h3>JSON Content Parser</h3>
-          <p>Parse and extract content from web-based JSON sources with intelligent structure detection.</p>
-          <a href="#parser" class="btn btn-primary">Start Parsing</a>
-        </div>
-      </div>
-
       <!-- Page Translation -->
       <div class="nav-card">
         <div class="nav-card-content">
@@ -76,56 +66,7 @@
           <a href="source-change.html" class="btn btn-primary">Manage Sources</a>
         </div>
       </div>
-
-      <!-- Analytics & Reports -->
-      <div class="nav-card">
-        <div class="nav-card-content">
-          <div class="icon">📊</div>
-          <h3>Analytics & Reports</h3>
-          <p>Monitor translation performance, track usage, and generate detailed reports.</p>
-          <a href="#analytics" class="btn btn-secondary">Coming Soon</a>
-        </div>
-      </div>
     </div>
-
-    <!-- JSON Content Parser Section -->
-    <section id="parser" class="form-container">
-      <h2 class="form-title">JSON Content Parser</h2>
-      
-      <form class="parser-form">
-        <div class="form-group">
-          <label for="source-url" class="form-label">Source URL</label>
-          <input 
-            type="url" 
-            id="source-url" 
-            class="form-input" 
-            placeholder="https://example.com/api/content.json"
-            required
-          >
-          <small style="color: var(--gray-500); font-size: 0.875rem;">
-            Enter the URL of the JSON file you want to parse and display
-          </small>
-        </div>
-
-        <div class="form-group">
-          <button type="button" id="parse-button" class="btn btn-success btn-lg">
-            <span class="btn-text">Parse JSON Content</span>
-            <div class="spinner hidden"></div>
-          </button>
-        </div>
-      </form>
-
-      <!-- Output Container -->
-      <div id="output" class="output-container hidden">
-        <div class="output-label">Parsed JSON Content</div>
-        <pre id="output-content"></pre>
-      </div>
-
-      <!-- Error Container -->
-      <div id="error-message" class="alert alert-error hidden">
-        <strong>Error:</strong> <span id="error-text"></span>
-      </div>
-    </section>
 
     <!-- Showcase Section -->
     <section style="margin-top: 3rem;">
