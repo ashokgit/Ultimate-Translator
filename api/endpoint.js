@@ -16,7 +16,7 @@ const { changeSource } = require("../controllers/SourceController");
 const {
   translateString,
 } = require("../controllers/StringTranslatorController");
-const { filterList } = require("../controllers/TranslatedListController");
+const { filterList, getModelNames, deleteTranslation } = require("../controllers/TranslatedListController");
 const filterAndGroup = require("../services/FilterAndGroupTranslationService");
 const {
   availableLanguages,
@@ -440,6 +440,15 @@ router.post("/string-translate",
 
 router.get("/translated-list", 
   asyncHandler(filterList)
+);
+
+router.get("/model-names", 
+  asyncHandler(getModelNames)
+);
+
+router.delete("/delete-translation", 
+  validators.deleteTranslation,
+  asyncHandler(deleteTranslation)
 );
 
 router.get("/available-languages", 

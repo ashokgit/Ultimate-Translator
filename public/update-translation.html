@@ -16,13 +16,244 @@
   
   <!-- Custom Styles -->
   <link rel="stylesheet" href="css/styles.css">
+  
+  <style>
+    .filter-section {
+      background: var(--white);
+      border: 1px solid var(--gray-200);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+    
+    .translations-grid {
+      display: grid;
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    
+    .translation-card {
+      background: var(--white);
+      border: 1px solid var(--gray-200);
+      border-radius: 12px;
+      padding: 1.5rem;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+      transition: all 0.2s ease;
+    }
+    
+    .translation-card:hover {
+      border-color: var(--primary-color);
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+    }
+    
+    .translation-header {
+      display: flex;
+      justify-content: between;
+      align-items: center;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    
+    .translation-title {
+      font-size: 1.125rem;
+      font-weight: 600;
+      color: var(--gray-900);
+      margin: 0;
+    }
+    
+    .translation-status {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+    }
+    
+    .status-badge {
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    
+    .status-active {
+      background: #dcfce7;
+      color: #166534;
+    }
+    
+    .status-pending {
+      background: #fef3c7;
+      color: #92400e;
+    }
+    
+    .translation-meta {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1rem;
+      padding: 1rem;
+      background: var(--gray-50);
+      border-radius: 8px;
+    }
+    
+    .meta-item {
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .meta-label {
+      font-size: 0.75rem;
+      color: var(--gray-500);
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.25rem;
+    }
+    
+    .meta-value {
+      font-size: 0.875rem;
+      color: var(--gray-900);
+      font-weight: 500;
+    }
+    
+    .languages-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+    
+    .language-tag {
+      padding: 0.375rem 0.75rem;
+      background: var(--primary-color);
+      color: white;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    
+    .language-tag:hover {
+      background: var(--primary-dark);
+    }
+    
+    .language-tag.pending {
+      background: #f59e0b;
+    }
+    
+    .translation-actions {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: flex-end;
+      margin-top: 1rem;
+    }
+    
+    .action-btn {
+      padding: 0.5rem 1rem;
+      border: 1px solid var(--gray-300);
+      background: var(--white);
+      color: var(--gray-700);
+      border-radius: 6px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    
+    .action-btn:hover {
+      background: var(--gray-50);
+      border-color: var(--gray-400);
+    }
+    
+    .action-btn.primary {
+      background: var(--primary-color);
+      color: white;
+      border-color: var(--primary-color);
+    }
+    
+    .action-btn.primary:hover {
+      background: var(--primary-dark);
+      border-color: var(--primary-dark);
+    }
+    
+    .action-btn.danger {
+      background: #dc2626;
+      color: white;
+      border-color: #dc2626;
+    }
+    
+    .action-btn.danger:hover {
+      background: #b91c1c;
+      border-color: #b91c1c;
+    }
+    
+    .loading-state {
+      text-align: center;
+      padding: 3rem;
+      color: var(--gray-500);
+    }
+    
+    .empty-state {
+      text-align: center;
+      padding: 3rem;
+      color: var(--gray-500);
+    }
+    
+    .empty-state h3 {
+      color: var(--gray-700);
+      margin-bottom: 0.5rem;
+    }
+    
+    .filter-form {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      align-items: end;
+    }
+    
+    .stats-summary {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    
+    .stat-card {
+      background: var(--white);
+      border: 1px solid var(--gray-200);
+      border-radius: 8px;
+      padding: 1rem;
+      text-align: center;
+    }
+    
+    .stat-number {
+      font-size: 1.875rem;
+      font-weight: 700;
+      color: var(--primary-color);
+      margin-bottom: 0.25rem;
+    }
+    
+    .stat-label {
+      font-size: 0.875rem;
+      color: var(--gray-600);
+      font-weight: 500;
+    }
+    
+    /* Modal visibility control */
+    .hidden {
+      display: none !important;
+    }
+  </style>
 </head>
 <body>
   <div class="container">
     <!-- Header Section -->
     <header class="header">
       <h1>Translation <span class="accent">Management</span></h1>
-      <p class="subtitle">Update, edit, and manage your existing translations with version control</p>
+      <p class="subtitle">View, filter, and manage all your existing translations</p>
       
       <!-- Navigation -->
       <div style="margin-top: 1.5rem; display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
@@ -32,18 +263,17 @@
       </div>
     </header>
 
-    <!-- Translation Management Form -->
-    <section class="form-container">
-      <h2 class="form-title">Manage Translation</h2>
+    <!-- Filter Section -->
+    <section class="filter-section">
+      <h2 style="font-size: 1.125rem; font-weight: 600; color: var(--gray-900); margin: 0 0 1rem 0;">Filter Translations</h2>
       
-      <form class="translation-form">
-        <!-- Language Selection -->
+      <form class="filter-form" id="filter-form">
         <div class="form-group">
-          <label for="language" class="form-label">Translation Language</label>
-          <select id="language" class="form-select" required>
-            <option value="">Select language</option>
+          <label for="filter-language" class="form-label">Language</label>
+          <select id="filter-language" class="form-select">
+            <option value="">All Languages</option>
             <option value="en">English</option>
-            <option value="es" selected>Spanish (Español)</option>
+            <option value="es">Spanish (Español)</option>
             <option value="fr">French (Français)</option>
             <option value="de">German (Deutsch)</option>
             <option value="it">Italian (Italiano)</option>
@@ -55,98 +285,84 @@
             <option value="ar">Arabic (العربية)</option>
             <option value="hi">Hindi (हिन्दी)</option>
           </select>
-          <small style="color: var(--gray-500); font-size: 0.875rem;">
-            The language of the translation you want to manage
-          </small>
         </div>
 
-        <!-- Model Name -->
         <div class="form-group">
-          <label for="model-name" class="form-label">Model Name</label>
-          <input 
-            type="text" 
-            id="model-name" 
-            class="form-input" 
-            value="blog"
-            placeholder="e.g., blog, product, news"
-            required
-          >
-          <small style="color: var(--gray-500); font-size: 0.875rem;">
-            The content model identifier (e.g., blog, product catalog)
-          </small>
+          <label for="filter-model" class="form-label">Model Name</label>
+          <select id="filter-model" class="form-select">
+            <option value="">All Models</option>
+            <!-- Model options will be populated dynamically -->
+          </select>
         </div>
 
-        <!-- Content ID -->
         <div class="form-group">
-          <label for="content-id" class="form-label">Content ID</label>
-          <input 
-            type="text" 
-            id="content-id" 
-            class="form-input" 
-            value="demo123"
-            placeholder="e.g., demo123, post456"
-            required
-          >
-          <small style="color: var(--gray-500); font-size: 0.875rem;">
-            The unique identifier for the content piece you want to manage
-          </small>
+          <label for="filter-content-id" class="form-label">Content ID</label>
+          <input type="text" id="filter-content-id" class="form-input" placeholder="e.g., demo123, post456">
         </div>
 
-        <!-- Sample Data Options -->
         <div class="form-group">
-          <label class="form-label">Quick Sample Data</label>
-          <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem;">
-            <button type="button" class="sample-data-btn btn btn-secondary" 
-                    data-model="blog" data-content="demo123" data-lang="es" 
-                    style="font-size: 0.75rem; padding: 0.5rem 0.75rem;">
-              📝 Blog Demo
-            </button>
-            <button type="button" class="sample-data-btn btn btn-secondary" 
-                    data-model="product" data-content="prod456" data-lang="fr" 
-                    style="font-size: 0.75rem; padding: 0.5rem 0.75rem;">
-              🛍️ Product Demo
-            </button>
-            <button type="button" class="sample-data-btn btn btn-secondary" 
-                    data-model="news" data-content="news789" data-lang="de" 
-                    style="font-size: 0.75rem; padding: 0.5rem 0.75rem;">
-              📰 News Demo
-            </button>
-          </div>
-          <small style="color: var(--gray-500); font-size: 0.875rem;">
-            Click any button above to quickly load sample data for testing
-          </small>
-        </div>
-
-        <!-- Action Buttons -->
-        <div class="form-group">
-          <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
-            <button type="button" id="fetch-button" class="btn btn-primary btn-lg" style="flex: 1; min-width: 200px;">
-              <span class="fetch-btn-text">Fetch Translation</span>
-              <div class="fetch-spinner spinner hidden"></div>
-            </button>
-            <button type="button" id="update-button" class="btn btn-success btn-lg" style="flex: 1; min-width: 200px;" disabled>
-              <span class="update-btn-text">Update Translation</span>
-              <div class="update-spinner spinner hidden"></div>
-            </button>
-          </div>
+          <button type="button" id="apply-filters" class="btn btn-primary">
+            <span>🔍 Apply Filters</span>
+          </button>
         </div>
       </form>
+    </section>
 
-      <!-- Translation Editor -->
-      <div id="translation-editor" class="hidden" style="margin-top: 2rem;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-          <h3 style="color: var(--gray-700); font-size: 1.125rem; font-weight: 600; margin: 0;">
-            Translation Editor
-          </h3>
-          <div style="display: flex; gap: 0.5rem;">
-            <button type="button" id="format-json" class="btn btn-secondary" style="font-size: 0.75rem; padding: 0.5rem 0.75rem;">
-              🎨 Format JSON
-            </button>
-            <button type="button" id="reset-translation" class="btn btn-secondary" style="font-size: 0.75rem; padding: 0.5rem 0.75rem;">
-              🔄 Reset
-            </button>
+    <!-- Stats Summary -->
+    <section class="stats-summary" id="stats-summary">
+      <div class="stat-card">
+        <div class="stat-number" id="total-translations">-</div>
+        <div class="stat-label">Total Translations</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number" id="total-languages">-</div>
+        <div class="stat-label">Languages</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number" id="total-models">-</div>
+        <div class="stat-label">Models</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number" id="pending-count">-</div>
+        <div class="stat-label">Pending Items</div>
+      </div>
+    </section>
+
+    <!-- Translations List -->
+    <section>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+        <h2 style="font-size: 1.25rem; font-weight: 600; color: var(--gray-900); margin: 0;">All Translations</h2>
+        <button type="button" id="refresh-list" class="btn btn-secondary">
+          <span>🔄 Refresh</span>
+        </button>
+      </div>
+
+      <!-- Loading State -->
+      <div id="loading-state" class="loading-state">
+        <div class="spinner" style="margin: 0 auto 1rem;"></div>
+        <p>Loading translations...</p>
+      </div>
+
+      <!-- Empty State -->
+      <div id="empty-state" class="empty-state hidden">
+        <h3>No translations found</h3>
+        <p>Try adjusting your filters or create a new translation to get started.</p>
+        <a href="interceptor.html" class="btn btn-primary" style="margin-top: 1rem;">Create Translation</a>
+      </div>
+
+      <!-- Translations Grid -->
+      <div id="translations-grid" class="translations-grid hidden"></div>
+    </section>
+
+    <!-- Translation Editor Modal (for editing) -->
+    <div id="translation-editor" class="hidden" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; display: none; align-items: center; justify-content: center; padding: 2rem;">
+      <div style="background: white; border-radius: 12px; padding: 2rem; max-width: 800px; width: 100%; max-height: 80vh; overflow-y: auto;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+            <h3 style="margin: 0; color: var(--gray-900);">Edit Translation</h3>
+            <button type="button" id="close-editor" class="btn btn-secondary" style="padding: 0.5rem; cursor: pointer; font-size: 1.2rem;">✕</button>
           </div>
-        </div>
+        
+        <div id="editor-info" class="translation-meta" style="margin-bottom: 1.5rem;"></div>
         
         <div class="form-group">
           <label for="translation-content" class="form-label">Translation Content (JSON)</label>
@@ -154,72 +370,22 @@
             id="translation-content" 
             class="form-textarea"
             rows="15"
-            placeholder="Translation content will appear here after fetching..."
             style="font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace; font-size: 0.875rem;"
           ></textarea>
-          <small style="color: var(--gray-500); font-size: 0.875rem;">
-            Edit the JSON content above and click "Update Translation" to save your changes
-          </small>
         </div>
-
-        <!-- Translation Info -->
-        <div id="translation-info" class="alert" style="background: var(--gray-50); border: 1px solid var(--gray-200); color: var(--gray-700);">
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
-            <div>
-              <strong>Model:</strong> <span id="info-model">-</span>
-            </div>
-            <div>
-              <strong>Content ID:</strong> <span id="info-content-id">-</span>
-            </div>
-            <div>
-              <strong>Language:</strong> <span id="info-language">-</span>
-            </div>
-            <div>
-              <strong>Last Updated:</strong> <span id="info-updated">-</span>
-            </div>
-          </div>
+        
+        <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1.5rem;">
+          <button type="button" id="format-json" class="btn btn-secondary">🎨 Format JSON</button>
+          <button type="button" id="cancel-edit" class="btn btn-secondary">Cancel</button>
+          <button type="button" id="save-translation" class="btn btn-success">💾 Save Changes</button>
         </div>
       </div>
+    </div>
 
-      <!-- Error Container -->
-      <div id="error-message" class="alert alert-error hidden">
-        <strong>Error:</strong> <span id="error-text"></span>
-      </div>
-    </section>
-
-    <!-- Features Section -->
-    <section style="margin-top: 3rem;">
-      <div class="nav-grid" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));">
-        <div class="nav-card">
-          <div class="nav-card-content">
-            <div class="icon">✏️</div>
-            <h3>Live JSON Editing</h3>
-            <p>Edit translation content directly with syntax highlighting and real-time validation.</p>
-          </div>
-        </div>
-        <div class="nav-card">
-          <div class="nav-card-content">
-            <div class="icon">🔍</div>
-            <h3>Smart Search</h3>
-            <p>Quickly find and fetch existing translations by model, content ID, and language.</p>
-          </div>
-        </div>
-        <div class="nav-card">
-          <div class="nav-card-content">
-            <div class="icon">💾</div>
-            <h3>Version Control</h3>
-            <p>Track changes and maintain version history of your translation updates.</p>
-          </div>
-        </div>
-        <div class="nav-card">
-          <div class="nav-card-content">
-            <div class="icon">🎨</div>
-            <h3>JSON Formatting</h3>
-            <p>Automatic JSON beautification and validation for clean, readable content.</p>
-          </div>
-        </div>
-      </div>
-    </section>
+    <!-- Error Container -->
+    <div id="error-message" class="alert alert-error hidden">
+      <strong>Error:</strong> <span id="error-text"></span>
+    </div>
   </div>
 
   <!-- JavaScript -->

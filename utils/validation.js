@@ -141,6 +141,13 @@ const schemas = {
     content_id: commonPatterns.contentId,
     source_url: commonPatterns.url.optional(),
   }).options({ stripUnknown: true }),
+
+  // Delete translation validation
+  deleteTranslation: Joi.object({
+    content_id: commonPatterns.contentId,
+    model_name: commonPatterns.modelName,
+    language: commonPatterns.languageCode,
+  }).options({ stripUnknown: true }),
 };
 
 // Validation middleware factory
@@ -189,6 +196,7 @@ const validators = {
   translationUrlUpdate: createValidator(schemas.translationUrlUpdate, 'body'),
   translationFilter: createValidator(schemas.translationFilter, 'query'),
   availableLanguages: createValidator(schemas.availableLanguages, 'query'),
+  deleteTranslation: createValidator(schemas.deleteTranslation, 'body'),
 };
 
 // Input sanitization helper
