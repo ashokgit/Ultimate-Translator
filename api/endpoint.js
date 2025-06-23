@@ -16,7 +16,7 @@ const { changeSource } = require("../controllers/SourceController");
 const {
   translateString,
 } = require("../controllers/StringTranslatorController");
-const { filterList, getModelNames, deleteTranslation } = require("../controllers/TranslatedListController");
+const { filterList, getModelNames, deleteTranslation, getTranslationComparison, saveFieldApproval, bulkSaveFieldApprovals, getApprovalStatistics } = require("../controllers/TranslatedListController");
 const filterAndGroup = require("../services/FilterAndGroupTranslationService");
 const {
   availableLanguages,
@@ -446,9 +446,26 @@ router.get("/model-names",
   asyncHandler(getModelNames)
 );
 
+router.get("/translation-comparison", 
+  asyncHandler(getTranslationComparison)
+);
+
 router.delete("/delete-translation", 
   validators.deleteTranslation,
   asyncHandler(deleteTranslation)
+);
+
+// Field Approval Routes
+router.post("/field-approval", 
+  asyncHandler(saveFieldApproval)
+);
+
+router.post("/field-approvals/bulk", 
+  asyncHandler(bulkSaveFieldApprovals)
+);
+
+router.get("/approval-statistics", 
+  asyncHandler(getApprovalStatistics)
 );
 
 router.get("/available-languages", 

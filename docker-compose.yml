@@ -12,7 +12,7 @@ services:
       - /app/logs
     environment:
       - NODE_ENV=production
-      - MONGODB_URI=mongodb://mongo:27017/ultimate_translator
+      - MONGODB_URI=mongodb://mongo:27017/translator
       - DEFAULT_TRANSLATOR=${DEFAULT_TRANSLATOR:-huggingface}
       - HUGGINGFACE_API_URL=http://translator:5000
       - LOG_LEVEL=${LOG_LEVEL:-info}

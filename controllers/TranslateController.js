@@ -1,4 +1,4 @@
-const TranslatedPage = require("../models/TranslatedPage");
+const { TranslatedPage } = require("../models/TranslatedPage");
 const PageTranslationService = require("../services/PageTranslationService");
 const compareService = require("../services/JsonCompareUpdateService");
 const filterTranslation = require("../services/FilterTranslationService");

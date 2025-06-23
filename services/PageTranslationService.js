@@ -1,4 +1,4 @@
-const TranslatedPage = require("../models/TranslatedPage");
+const { TranslatedPage } = require("../models/TranslatedPage");
 const JsonFetcherService = require("./JsonFetcherService");
 const TranslationGeneratorService = require("./TranslationGeneratorService");
 const MetadataService = require("./MetadataService");

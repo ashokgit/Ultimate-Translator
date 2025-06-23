@@ -1,4 +1,4 @@
-const TranslatedPage = require("../models/TranslatedPage");
+const { TranslatedPage } = require("../models/TranslatedPage");
 const SourceCompareService = require("../services/SourceCompareService");
 
 const sourceController = {
