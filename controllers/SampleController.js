@@ -8,7 +8,7 @@ const sampleController = {
    * Generate sample translated data with intelligent categorization
    */
   generateSample: async (req, res) => {
-    const { model_name, language, source_url, content_id } = req.query;
+    const { model_name, language, source_url, content_id, customer_id } = req.query;
 
     try {
       // Validate required parameters
@@ -16,7 +16,7 @@ const sampleController = {
         throw new ValidationError("Missing required parameters: model_name, language, source_url");
       }
 
-      const translationService = new PageTranslationService(model_name, language);
+      const translationService = new PageTranslationService(model_name, language, customer_id || 'default');
       const metadataService = new MetadataService();
 
       // Perform translation

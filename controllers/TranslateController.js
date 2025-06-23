@@ -8,11 +8,12 @@ const { successResponse, NotFoundError, ValidationError } = require("../utils/er
 
 const translateController = {
   translatePage: async (req, res) => {
-    const { model_name, language, source_url, content_id } = req.query;
+    const { model_name, language, source_url, content_id, customer_id } = req.query;
 
     const translationService = new PageTranslationService(
       model_name,
-      language
+      language,
+      customer_id || 'default'
     );
     const savedPage = await translationService.translatePage(
       source_url,

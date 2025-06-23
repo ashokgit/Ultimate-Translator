@@ -5,13 +5,17 @@
   
   "nonTranslatableKeys": [
     "id", "uuid", "key", "hash", "token", "api_key", "secret",
-    "url", "uri", "link", "href", "src", "slug", "permalink",
+    "url", "uri", "link", "href", "src", "slug", "permalink", "old_urls",
     "created_at", "updated_at", "timestamp", "date_created", "date_modified",
     "version", "build", "revision", "commit", "checksum",
     "lat", "lng", "latitude", "longitude", "coordinates", "location_id",
     "timezone", "tz", "utc_offset", "locale_code", "language_code",
     "currency_code", "country_code", "region_code", "area_code",
-    "phone", "email", "username", "user_id", "account_id", "session_id"
+    "phone", "email", "username", "user_id", "account_id", "session_id",
+    "endpoint", "method", "payload", "target_language", "model_name",
+    "content_id", "source_url", "suggested_languages", "translation_features",
+    "sample_type", "api_usage_example", "expected_response", "success",
+    "data", "metadata", "translation_time", "cached", "quality_score"
   ],
 
   "keyPatterns": [
@@ -39,7 +43,14 @@
     "^#[0-9a-fA-F]{3,6}$",
     "^rgb\\(\\d+,\\s*\\d+,\\s*\\d+\\)$",
     "^\\d+px$",
-    "^\\d+(\\.\\d+)?(em|rem|vh|vw|%)$"
+    "^\\d+(\\.\\d+)?(em|rem|vh|vw|%)$",
+    "^(GET|POST|PUT|DELETE|PATCH|HEAD|OPTIONS)$",
+    "^[a-z]{2}(-[A-Z]{2})?$",
+    "^\\/api\\/v\\d+\\/",
+    "^(true|false)$",
+    "^\\d+(\\.\\d+)?$",
+    "^< \\d+ seconds?$",
+    "^[A-Za-z]+ [A-Za-z]+ \\([¥$€£₹₽]\\)$"
   ],
 
   "contentTypeRules": {

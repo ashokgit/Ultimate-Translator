@@ -154,7 +154,8 @@ const getConfigAnalytics = (customerId = 'default') => {
 const makeSlug = (str) => {
   if (!str) return '';
   
-  return str
+  // For non-Latin scripts, use transliteration or fallback
+  const slug = str
     .toLowerCase()
     .trim()
     // Handle non-English characters better
@@ -164,24 +165,56 @@ const makeSlug = (str) => {
     .replace(/\s+/g, '-') // Replace spaces with hyphens
     .replace(/-+/g, '-') // Replace multiple hyphens with single
     .replace(/^-|-$/g, ''); // Remove leading/trailing hyphens
+  
+  // If slug is empty (non-Latin characters), create a fallback
+  if (!slug || slug.length === 0) {
+    // Use a hash of the original string as fallback
+    const hash = str.split('').reduce((acc, char) => {
+      return acc + char.charCodeAt(0);
+    }, 0);
+    return `content-${hash}`;
+  }
+  
+  return slug;
 };
 
 const needsUrl = (obj) => {
-  // Only specific object types should have URLs generated
-  const urlWorthyTypes = ['page', 'article', 'destination', 'attraction', 'guide'];
-  const urlWorthyKeys = ['name', 'title', 'destination'];
+  // Only generate URLs for very specific content types
   
-  if (obj.type && urlWorthyTypes.includes(obj.type.toLowerCase())) return true;
-  if (obj.model_name) return true; // Root content objects
+  // 1. Objects with explicit content types that warrant URLs
+  const urlWorthyTypes = ['attraction', 'destination', 'restaurant', 'hotel', 'activity', 'guide', 'article', 'page'];
+  if (obj.type && urlWorthyTypes.includes(obj.type.toLowerCase())) {
+    return true;
+  }
   
-  // Check if object has properties that suggest it's a main content item
-  const hasUrlWorthyContent = Object.keys(obj).some(key => 
-    urlWorthyKeys.includes(key.toLowerCase()) && 
-    typeof obj[key] === 'string' && 
-    obj[key].length > 0
-  );
+  // 2. Root content objects (top-level pages)
+  if (obj.model_name && obj.overview) {
+    return true;
+  }
   
-  return hasUrlWorthyContent && Object.keys(obj).length > 3; // Has substantial content
+  // 3. Main content items with substantial descriptive content
+  // Must have name/title AND description AND be substantial
+  const hasName = obj.name && typeof obj.name === 'string' && obj.name.length > 0;
+  const hasTitle = obj.title && typeof obj.title === 'string' && obj.title.length > 0;
+  const hasDescription = obj.description && typeof obj.description === 'string' && obj.description.length > 20;
+  
+  if ((hasName || hasTitle) && hasDescription && Object.keys(obj).length >= 4) {
+    // Additional check: must not be technical/config objects or food items
+    const excludedKeys = [
+      'endpoint', 'method', 'payload', 'api_key', 'token', 'config', 'setting', 'param',
+      'price_range', 'where_to_try', 'ingredients', 'recipe', 'cuisine_type',
+      'luxury', 'mid_range', 'budget', 'from_airport', 'local_transport'
+    ];
+    const hasExcludedKeys = Object.keys(obj).some(key => 
+      excludedKeys.some(excludeKey => key.toLowerCase().includes(excludeKey.toLowerCase()))
+    );
+    
+    if (!hasExcludedKeys) {
+      return true;
+    }
+  }
+  
+  return false;
 };
 
 /**

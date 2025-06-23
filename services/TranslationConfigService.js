@@ -124,12 +124,16 @@ class TranslationConfigService {
     try {
       const configData = await fs.readFile(this.configPath, 'utf8');
       const config = JSON.parse(configData);
-      this.configCache.set('default', { ...this.defaultConfig, ...config });
+      
+      // Convert string patterns back to RegExp objects
+      const processedConfig = this.processLoadedConfig(config);
+      this.configCache.set('default', { ...this.defaultConfig, ...processedConfig });
       
       // Load customer-specific configurations
       if (config.customerOverrides) {
         for (const [customerId, customerConfig] of Object.entries(config.customerOverrides)) {
-          this.configCache.set(customerId, this.mergeConfigs(this.defaultConfig, customerConfig));
+          const processedCustomerConfig = this.processLoadedConfig(customerConfig);
+          this.configCache.set(customerId, this.mergeConfigs(this.defaultConfig, processedCustomerConfig));
         }
       }
     } catch (error) {
@@ -138,6 +142,68 @@ class TranslationConfigService {
       }
       // File doesn't exist, will be created on first save
     }
+  }
+
+  /**
+   * Process loaded configuration to convert string patterns to RegExp
+   */
+  processLoadedConfig(config) {
+    const processed = { ...config };
+    
+    // Convert keyPatterns from strings to RegExp objects
+    if (processed.keyPatterns && Array.isArray(processed.keyPatterns)) {
+      processed.keyPatterns = processed.keyPatterns.map(pattern => {
+        if (typeof pattern === 'string') {
+          try {
+            return new RegExp(pattern);
+          } catch (error) {
+            logger.warn("Invalid regex pattern", { pattern, error: error.message });
+            return null;
+          }
+        }
+        return pattern;
+      }).filter(pattern => pattern !== null);
+    }
+    
+    // Convert valuePatterns from strings to RegExp objects
+    if (processed.valuePatterns && Array.isArray(processed.valuePatterns)) {
+      processed.valuePatterns = processed.valuePatterns.map(pattern => {
+        if (typeof pattern === 'string') {
+          try {
+            return new RegExp(pattern);
+          } catch (error) {
+            logger.warn("Invalid regex pattern", { pattern, error: error.message });
+            return null;
+          }
+        }
+        return pattern;
+      }).filter(pattern => pattern !== null);
+    }
+
+    // Convert content type rule patterns
+    if (processed.contentTypeRules) {
+      for (const [contentType, rules] of Object.entries(processed.contentTypeRules)) {
+        if (rules.preservePatterns && Array.isArray(rules.preservePatterns)) {
+          rules.preservePatterns = rules.preservePatterns.map(pattern => {
+            if (typeof pattern === 'string') {
+              try {
+                return new RegExp(pattern);
+              } catch (error) {
+                logger.warn("Invalid regex pattern in content type rules", { 
+                  contentType, 
+                  pattern, 
+                  error: error.message 
+                });
+                return null;
+              }
+            }
+            return pattern;
+          }).filter(pattern => pattern !== null);
+        }
+      }
+    }
+    
+    return processed;
   }
 
   /**
@@ -156,8 +222,8 @@ class TranslationConfigService {
       }
 
       const configToSave = {
-        ...defaultConfig,
-        customerOverrides,
+        ...this.prepareConfigForSaving(defaultConfig),
+        customerOverrides: this.prepareCustomerOverridesForSaving(customerOverrides),
         lastUpdated: new Date().toISOString(),
         autoDetectedPatterns: Array.from(this.autoDetectedPatterns)
       };
@@ -168,6 +234,50 @@ class TranslationConfigService {
       logger.error("Failed to save translation configuration", { error: error.message });
       throw error;
     }
+  }
+
+  /**
+   * Prepare configuration for saving by converting RegExp objects to strings
+   */
+  prepareConfigForSaving(config) {
+    const prepared = { ...config };
+    
+    // Convert RegExp objects to strings for JSON serialization
+    if (prepared.keyPatterns && Array.isArray(prepared.keyPatterns)) {
+      prepared.keyPatterns = prepared.keyPatterns.map(pattern => 
+        pattern instanceof RegExp ? pattern.source : pattern
+      );
+    }
+    
+    if (prepared.valuePatterns && Array.isArray(prepared.valuePatterns)) {
+      prepared.valuePatterns = prepared.valuePatterns.map(pattern => 
+        pattern instanceof RegExp ? pattern.source : pattern
+      );
+    }
+
+    // Convert content type rule patterns
+    if (prepared.contentTypeRules) {
+      for (const [contentType, rules] of Object.entries(prepared.contentTypeRules)) {
+        if (rules.preservePatterns && Array.isArray(rules.preservePatterns)) {
+          rules.preservePatterns = rules.preservePatterns.map(pattern => 
+            pattern instanceof RegExp ? pattern.source : pattern
+          );
+        }
+      }
+    }
+    
+    return prepared;
+  }
+
+  /**
+   * Prepare customer overrides for saving
+   */
+  prepareCustomerOverridesForSaving(customerOverrides) {
+    const prepared = {};
+    for (const [customerId, config] of Object.entries(customerOverrides)) {
+      prepared[customerId] = this.prepareConfigForSaving(config);
+    }
+    return prepared;
   }
 
   /**
@@ -182,39 +292,71 @@ class TranslationConfigService {
    * Check if a key should be translated
    */
   async shouldTranslateKey(key, value, customerId = 'default') {
-    const config = await this.getConfig(customerId);
-    
-    // Check explicit key exclusions
-    if (config.nonTranslatableKeys.includes(key.toLowerCase())) {
-      this.recordPattern(key, 'key_exclusion', customerId);
-      return false;
-    }
-
-    // Check key patterns
-    for (const pattern of config.keyPatterns) {
-      if (pattern.test(key)) {
-        this.recordPattern(key, 'key_pattern', customerId);
+    try {
+      const config = await this.getConfig(customerId);
+      
+      if (!config) {
+        logger.warn("No configuration found, using default behavior", { customerId });
+        return true;
+      }
+      
+      // Check explicit key exclusions
+      if (config.nonTranslatableKeys && config.nonTranslatableKeys.includes(key.toLowerCase())) {
+        this.recordPattern(key, 'key_exclusion', customerId);
         return false;
       }
-    }
 
-    // Check value patterns if value is provided
-    if (value && typeof value === 'string') {
-      for (const pattern of config.valuePatterns) {
-        if (pattern.test(value)) {
-          this.recordPattern(key, 'value_pattern', customerId);
-          return false;
+      // Check key patterns
+      if (config.keyPatterns && Array.isArray(config.keyPatterns)) {
+        for (const pattern of config.keyPatterns) {
+          try {
+            if (pattern && typeof pattern.test === 'function' && pattern.test(key)) {
+              this.recordPattern(key, 'key_pattern', customerId);
+              return false;
+            }
+          } catch (error) {
+            logger.error("Error testing key pattern", { 
+              pattern: pattern?.source || pattern, 
+              key, 
+              customerId, 
+              error: error.message 
+            });
+          }
         }
       }
-    }
 
-    // Check auto-detected patterns
-    if (this.autoDetectedPatterns.has(key.toLowerCase())) {
-      this.recordPattern(key, 'auto_detected', customerId);
+      // Check value patterns if value is provided
+      if (value && typeof value === 'string' && config.valuePatterns && Array.isArray(config.valuePatterns)) {
+        for (const pattern of config.valuePatterns) {
+          try {
+            if (pattern && typeof pattern.test === 'function' && pattern.test(value)) {
+              this.recordPattern(key, 'value_pattern', customerId);
+              return false;
+            }
+          } catch (error) {
+            logger.error("Error testing value pattern", { 
+              pattern: pattern?.source || pattern, 
+              value: value.substring(0, 50), 
+              key, 
+              customerId, 
+              error: error.message 
+            });
+          }
+        }
+      }
+
+      // Check auto-detected patterns
+      if (this.autoDetectedPatterns.has(key.toLowerCase())) {
+        this.recordPattern(key, 'auto_detected', customerId);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      logger.error("Error in shouldTranslateKey", { key, customerId, error: error.message });
+      // Fallback to safe behavior - don't translate if there's an error
       return false;
     }
-
-    return true;
   }
 
   /**

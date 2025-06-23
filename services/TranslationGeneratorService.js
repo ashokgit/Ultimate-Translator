@@ -1,11 +1,13 @@
 const TranslationLog = require("../models/TranslationLog");
 const TextTranslator = require("../translators/TextTranslator");
+const NumeralTranslator = require("../translators/NumeralTranslator");
 const { shouldTranslate, shouldTranslateSync, makeSlug, needsUrl, learnFromData } = require("../helpers/stringHelpers");
 const logger = require("../utils/logger");
 
 class TranslationGeneratorService {
   constructor(customerId = 'default') {
     this.customerId = customerId;
+    this.numeralTranslator = new NumeralTranslator();
     this.translationStats = {
       translated: 0,
       skipped: 0,
@@ -159,8 +161,11 @@ class TranslationGeneratorService {
                          );
         
         if (urlSource) {
-          translatedObject.url = makeSlug(urlSource);
-          translatedObject.old_urls = []; // For URL history tracking
+          const slug = makeSlug(urlSource);
+          if (slug && slug.length > 0) {
+            translatedObject.url = slug;
+            translatedObject.old_urls = []; // For URL history tracking
+          }
         }
       }
 
@@ -202,11 +207,48 @@ class TranslationGeneratorService {
           textLength: text.length,
           language
         });
-        return existingTranslation.translated_text;
+        
+        // Apply numeral conversion to cached translations too
+        let cachedText = existingTranslation.translated_text;
+        if (this.numeralTranslator.hasNumeralsToConvert(cachedText, language)) {
+          try {
+            cachedText = await this.numeralTranslator.convertNumerals(cachedText, language);
+          } catch (error) {
+            logger.warn("Numeral conversion failed for cached text", {
+              key,
+              path,
+              language,
+              error: error.message
+            });
+          }
+        }
+        
+        return cachedText;
       }
 
       // Perform translation
-      const translatedText = await this.translate(text, language);
+      let translatedText = await this.translate(text, language);
+      
+      // Convert numerals to target language script if needed
+      if (this.numeralTranslator.hasNumeralsToConvert(translatedText, language)) {
+        try {
+          translatedText = await this.numeralTranslator.convertNumerals(translatedText, language);
+          logger.debug("Numerals converted", {
+            key,
+            path,
+            language,
+            hasNumerals: true
+          });
+        } catch (error) {
+          logger.warn("Numeral conversion failed, using text without numeral conversion", {
+            key,
+            path,
+            language,
+            error: error.message
+          });
+          // Continue with translated text without numeral conversion
+        }
+      }
       
       // Save to cache
       const newTranslationLog = new TranslationLog({

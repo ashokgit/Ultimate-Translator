@@ -5,11 +5,12 @@ const MetadataService = require("./MetadataService");
 const logger = require("../utils/logger");
 
 class PageTranslationService {
-  constructor(modelName, language) {
+  constructor(modelName, language, customerId = 'default') {
     this.modelName = modelName;
     this.language = language;
+    this.customerId = customerId;
     this.jsonFetcher = new JsonFetcherService();
-    this.translationGenerator = new TranslationGeneratorService();
+    this.translationGenerator = new TranslationGeneratorService(customerId);
     this.metadataService = new MetadataService();
   }
 
