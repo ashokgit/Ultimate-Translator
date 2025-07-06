@@ -42,36 +42,40 @@ class TextTranslator {
     }
   }
 
-  async translate(originalString, targetLanguage) {
+  async translate(originalString, targetLanguage, skipCache = false) {
     const startTime = Date.now();
     
     try {
       // Check cache first
-      const translationLog = await TranslationLog.findOne({
-        text: originalString,
-        lang: targetLanguage,
-      });
-
-      if (translationLog) {
-        const cacheTime = Date.now() - startTime;
-        logger.debug("Translation found in cache", {
-          provider: this.translatorType,
-          textLength: originalString.length,
-          targetLanguage,
-          cacheTime: `${cacheTime}ms`
+      if (!skipCache) {
+        const translationLog = await TranslationLog.findOne({
+          text: originalString,
+          lang: targetLanguage,
         });
-        
-        // Record cache hit
-        performanceMonitor.recordTranslation(this.translatorType, cacheTime, true);
-        
-        return translationLog.translated_text;
+
+        if (translationLog) {
+          const cacheTime = Date.now() - startTime;
+          logger.debug("Translation found in cache", {
+            provider: this.translatorType,
+            textLength: originalString.length,
+            targetLanguage,
+            cacheTime: `${cacheTime}ms`
+          });
+          
+          // Record cache hit
+          performanceMonitor.recordTranslation(this.translatorType, cacheTime, true);
+          
+          return translationLog.translated_text;
+        }
       }
 
       // Perform actual translation with circuit breaker protection
-      logger.debug("Translation not in cache, calling provider", {
+      logger.info("Translation not in cache, calling provider", {
         provider: this.translatorType,
         textLength: originalString.length,
-        targetLanguage
+        targetLanguage,
+        originalText: originalString.substring(0, 50) + (originalString.length > 50 ? '...' : ''),
+        translatorClass: this.translator.constructor.name
       });
       
       // Define fallback function for circuit breaker
@@ -122,6 +126,13 @@ class TextTranslator {
         return originalString;
       };
       
+      logger.info("About to call translator", {
+        provider: this.translatorType,
+        originalText: originalString,
+        targetLanguage,
+        translatorMethod: typeof this.translator.translate
+      });
+
       const translatedText = await circuitBreakerManager.execute(
         `translation-${this.translatorType}`,
         async () => await this.translator.translate(originalString, targetLanguage),
@@ -132,15 +143,20 @@ class TextTranslator {
           resetTimeout: 60000 // Longer reset time for translation services
         }
       );
-      
-      // Save to cache
-      const newTranslationLog = new TranslationLog({
-        text: originalString,
-        lang: targetLanguage,
-        translated_text: translatedText,
+
+      logger.info("Translation completed by provider", {
+        provider: this.translatorType,
+        originalText: originalString,
+        translatedText: translatedText,
+        targetLanguage
       });
       
-      await newTranslationLog.save();
+      // Save to cache, upserting to handle both new and existing entries
+      await TranslationLog.findOneAndUpdate(
+        { text: originalString, lang: targetLanguage },
+        { translated_text: translatedText, updated_at: new Date() },
+        { upsert: true, new: true, setDefaultsOnInsert: true }
+      );
       
       const totalTime = Date.now() - startTime;
       

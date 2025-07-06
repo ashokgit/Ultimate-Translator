@@ -328,12 +328,13 @@ const translateController = {
       // Initialize translation generator service
       const translationGenerator = new TranslationGeneratorService(customer_id || 'default');
 
-      // Re-translate the specific field
+      // Re-translate the specific field (skip cache to force new translation)
       const newTranslatedText = await translationGenerator.translateValue(
         original_text,
         language,
         field_path.split('.').pop(), // Use the last part as the key
-        field_path
+        field_path,
+        true // skipCache = true to force new translation
       );
 
       // Update the specific field in the translation
@@ -371,13 +372,14 @@ const translateController = {
       existingTranslatedPage.markModified("translations");
       await existingTranslatedPage.save();
 
-      logger.info("Field re-translated successfully", {
+      logger.info("Field re-translated successfully (cache bypassed)", {
         contentId: content_id,
         modelName: model_name,
         language: language,
         fieldPath: field_path,
         originalText: original_text.substring(0, 50) + '...',
-        newTranslatedText: newTranslatedText.substring(0, 50) + '...'
+        newTranslatedText: newTranslatedText.substring(0, 50) + '...',
+        cacheBypass: true
       });
 
       const response = successResponse(

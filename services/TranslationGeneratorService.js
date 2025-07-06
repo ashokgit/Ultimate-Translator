@@ -191,43 +191,54 @@ class TranslationGeneratorService {
     return node;
   }
 
-  async translateValue(text, language, key = '', path = '') {
+  async translateValue(text, language, key = '', path = '', skipCache = false) {
     try {
-      // Check cache first
-      const existingTranslation = await TranslationLog.findOne({
-        text: text,
-        lang: language,
-      });
+      // Check cache first (unless skipCache is true)
+      if (!skipCache) {
+        const existingTranslation = await TranslationLog.findOne({
+          text: text,
+          lang: language,
+        });
 
-      if (existingTranslation) {
-        this.translationStats.cached++;
-        logger.debug("Translation found in cache", {
+        if (existingTranslation) {
+          this.translationStats.cached++;
+          logger.debug("Translation found in cache", {
+            key,
+            path,
+            textLength: text.length,
+            language
+          });
+          
+          // Apply numeral conversion to cached translations too
+          let cachedText = existingTranslation.translated_text;
+          if (this.numeralTranslator.hasNumeralsToConvert(cachedText, language)) {
+            try {
+              cachedText = await this.numeralTranslator.convertNumerals(cachedText, language);
+            } catch (error) {
+              logger.warn("Numeral conversion failed for cached text", {
+                key,
+                path,
+                language,
+                error: error.message
+              });
+            }
+          }
+          
+          return cachedText;
+        }
+      } else {
+        logger.info("Skipping cache for re-translation", {
           key,
           path,
           textLength: text.length,
-          language
+          language,
+          originalText: text.substring(0, 50) + (text.length > 50 ? '...' : ''),
+          reason: "Cache bypass requested for fresh translation"
         });
-        
-        // Apply numeral conversion to cached translations too
-        let cachedText = existingTranslation.translated_text;
-        if (this.numeralTranslator.hasNumeralsToConvert(cachedText, language)) {
-          try {
-            cachedText = await this.numeralTranslator.convertNumerals(cachedText, language);
-          } catch (error) {
-            logger.warn("Numeral conversion failed for cached text", {
-              key,
-              path,
-              language,
-              error: error.message
-            });
-          }
-        }
-        
-        return cachedText;
       }
 
       // Perform translation
-      let translatedText = await this.translate(text, language);
+      let translatedText = await this.translate(text, language, skipCache);
       
       // Convert numerals to target language script if needed
       if (this.numeralTranslator.hasNumeralsToConvert(translatedText, language)) {
@@ -250,21 +261,16 @@ class TranslationGeneratorService {
         }
       }
       
-      // Save to cache
-      const newTranslationLog = new TranslationLog({
-        text: text,
-        lang: language,
-        translated_text: translatedText,
-      });
-      await newTranslationLog.save();
-
       this.translationStats.translated++;
-      logger.debug("New translation completed and cached", {
+      logger.debug("New translation completed", {
         key,
         path,
         textLength: text.length,
         resultLength: translatedText.length,
-        language
+        language,
+        skipCache: skipCache,
+        originalText: text.substring(0, 50) + (text.length > 50 ? '...' : ''),
+        translatedText: translatedText.substring(0, 50) + (translatedText.length > 50 ? '...' : '')
       });
 
       return translatedText;
@@ -281,9 +287,9 @@ class TranslationGeneratorService {
     }
   }
 
-  async translate(text, targetLanguage) {
+  async translate(text, targetLanguage, skipCache = false) {
     const translator = new TextTranslator();
-    return await translator.translate(text, targetLanguage);
+    return await translator.translate(text, targetLanguage, skipCache);
   }
 
   getTranslationStats() {

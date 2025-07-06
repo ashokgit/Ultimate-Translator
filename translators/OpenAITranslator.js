@@ -67,6 +67,13 @@ class OpenAITranslator {
   async translate(originalString, targetLanguage) {
     const startTime = Date.now();
     
+    logger.info("OpenAI Translator called", {
+      originalText: originalString,
+      targetLanguage: targetLanguage,
+      textLength: originalString.length,
+      timestamp: new Date().toISOString()
+    });
+    
     try {
       // Ensure translator is initialized
       await this.initialize();
@@ -78,7 +85,9 @@ class OpenAITranslator {
       logger.debug("Starting OpenAI translation", {
         textLength: originalString.length,
         targetLanguage: languageName,
-        model: this.model
+        targetLanguageCode: targetLanguage,
+        model: this.model,
+        originalText: originalString.substring(0, 100) + (originalString.length > 100 ? '...' : '')
       });
 
       const response = await this.openai.chat.completions.create({
@@ -86,7 +95,18 @@ class OpenAITranslator {
         messages: [
           {
             role: "system",
-            content: `You are an expert translator. Your task is to translate the user's text into ${languageName}. Preserve the original meaning, tone, and formatting (including HTML tags, markdown, and line breaks). If you encounter any placeholders (like %s, {variable}, etc.), keep them as they are in the translated text. Translate accurately and naturally.`,
+            content: `You are an expert translator. Your task is to translate the user's text into ${languageName} language (language code: ${targetLanguage}). 
+
+CRITICAL INSTRUCTIONS:
+- Translate the text into ${languageName} language, NOT into any other language
+- Use ${languageName} script and vocabulary
+- For place names like "Kyoto, Japan", transliterate them into ${languageName} script (e.g., "क्योटो, जापान" for Nepali)
+- Do NOT convert text to Japanese, Chinese, or any other language's characters unless specifically requested
+- Preserve original meaning, tone, and formatting (including HTML tags, markdown, and line breaks)
+- If you encounter placeholders (like %s, {variable}, etc.), keep them as they are
+- Translate accurately and naturally to ${languageName}
+
+Target Language: ${languageName} (${targetLanguage})`,
           },
           {
             role: "user",
@@ -100,12 +120,26 @@ class OpenAITranslator {
       const translatedText = response.choices[0].message.content.trim();
       const translationTime = Date.now() - startTime;
       
+      logger.info("OpenAI response received", {
+        originalText: originalString,
+        translatedText: translatedText,
+        targetLanguage: targetLanguage,
+        languageName: languageName,
+        model: this.model,
+        translationTime: `${translationTime}ms`,
+        fullResponse: JSON.stringify(response.choices[0].message)
+      });
+      
       logger.logTranslation('openai', originalString, targetLanguage, true);
       
       logger.debug("OpenAI translation completed", {
         translationTime: `${translationTime}ms`,
         resultLength: translatedText.length,
-        tokensUsed: response.usage?.total_tokens || 'unknown'
+        tokensUsed: response.usage?.total_tokens || 'unknown',
+        originalText: originalString.substring(0, 50) + (originalString.length > 50 ? '...' : ''),
+        translatedText: translatedText.substring(0, 50) + (translatedText.length > 50 ? '...' : ''),
+        targetLanguage: languageName,
+        targetLanguageCode: targetLanguage
       });
 
       return translatedText;
