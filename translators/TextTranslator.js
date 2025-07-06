@@ -4,6 +4,8 @@ const TranslationLog = require("../models/TranslationLog");
 const GoogleTranslator = require("./GoogleTranslator");
 const HuggingFaceTranslator = require("./HuggingFaceTranslator");
 const OpenAITranslator = require("./OpenAITranslator");
+const PlaceholderSafeTranslator = require("./PlaceholderSafeTranslator"); // Import the new translator
+const { tokenizeString, shouldTranslateSync } = require("../helpers/stringHelpers"); // Import tokenizer and shouldTranslateSync
 const circuitBreakerManager = require("../utils/circuitBreaker");
 const performanceMonitor = require("../utils/performanceMonitor");
 
@@ -44,7 +46,7 @@ class TextTranslator {
 
   async translate(originalString, targetLanguage, skipCache = false) {
     const startTime = Date.now();
-    
+
     try {
       // Check cache first
       if (!skipCache) {
@@ -59,92 +61,100 @@ class TextTranslator {
             provider: this.translatorType,
             textLength: originalString.length,
             targetLanguage,
-            cacheTime: `${cacheTime}ms`
+            cacheTime: `${cacheTime}ms`,
           });
-          
-          // Record cache hit
           performanceMonitor.recordTranslation(this.translatorType, cacheTime, true);
-          
           return translationLog.translated_text;
         }
       }
 
-      // Perform actual translation with circuit breaker protection
-      logger.info("Translation not in cache, calling provider", {
-        provider: this.translatorType,
-        textLength: originalString.length,
-        targetLanguage,
-        originalText: originalString.substring(0, 50) + (originalString.length > 50 ? '...' : ''),
-        translatorClass: this.translator.constructor.name
-      });
-      
-      // Define fallback function for circuit breaker
-      const fallbackTranslation = async () => {
-        logger.warn("Using fallback translation service", {
-          originalProvider: this.translatorType,
-          targetLanguage
+      // Check for placeholders or HTML tags to determine if PlaceholderSafeTranslator should be used
+      // This regex should align with what tokenizeString can handle (placeholders + HTML tags)
+      // and ignore escaped placeholders.
+      const comprehensiveDetectionRegex = /(?<!\\)({{\s*[\w.-]+\s*}})|(?<!\\){([\w.-]+)}|(?<!\\)(%[\w.-]+)|(<\/?\w+((\s+\w+(?:\s*=\s*(?:"[^"]*"|'[^']*'|[\w-]+))?)*\s*|\s*)\/?>)/g;
+      const needsSpecialHandling = comprehensiveDetectionRegex.test(originalString);
+
+      let translatedText;
+
+      if (needsSpecialHandling && this.translator instanceof OpenAITranslator) { // Or any other LLM that can handle instructions
+        logger.info("Placeholders or HTML tags detected, using PlaceholderSafeTranslator", {
+          provider: this.translatorType,
+          textLength: originalString.length,
+          targetLanguage,
         });
-        
-        // Try alternative providers in order of preference
-        const fallbackProviders = ['google', 'openai', 'huggingface'].filter(p => p !== this.translatorType);
-        
-        for (const provider of fallbackProviders) {
+        const { tokenizedString, tokenMap } = tokenizeString(originalString);
+        if (Object.keys(tokenMap).length > 0) {
+          const safeTranslator = new PlaceholderSafeTranslator(this.translator);
           try {
-            let fallbackTranslator;
-            switch (provider) {
-              case "google":
-                fallbackTranslator = new GoogleTranslator();
-                break;
-              case "openai":
-                fallbackTranslator = new OpenAITranslator();
-                break;
-              case "huggingface":
-                fallbackTranslator = new HuggingFaceTranslator();
-                break;
-            }
-            
-            const result = await fallbackTranslator.translate(originalString, targetLanguage);
-            logger.info("Fallback translation successful", {
-              fallbackProvider: provider,
-              originalProvider: this.translatorType
+            translatedText = await safeTranslator.translatePreservingPlaceholders(
+              tokenizedString,
+              tokenMap,
+              targetLanguage
+            );
+            logger.info("PlaceholderSafeTranslator completed successfully", { provider: this.translatorType });
+          } catch (safeTranslateError) {
+            logger.warn("PlaceholderSafeTranslator failed, attempting standard translation", {
+              provider: this.translatorType,
+              error: safeTranslateError.message,
             });
-            return result;
-          } catch (fallbackError) {
-            logger.warn("Fallback translation failed", {
-              fallbackProvider: provider,
-              error: fallbackError.message
-            });
-            continue;
+            // Fallback to standard translation if PlaceholderSafeTranslator fails
+            // The circuit breaker below will handle further fallbacks if this also fails
+            translatedText = await this.translator.translate(originalString, targetLanguage);
           }
+        } else {
+          // No actual tokens were generated, proceed with standard translation
+          logger.info("Placeholder pattern matched, but no specific tokens generated, proceeding with standard translation.", { provider: this.translatorType });
+          translatedText = await this.translator.translate(originalString, targetLanguage);
         }
-        
-        // If all fallbacks fail, return original text
-        logger.error("All translation providers failed, returning original text", {
-          originalProvider: this.translatorType,
-          fallbackProviders
+      } else {
+        // Perform actual translation with circuit breaker protection for non-placeholder or non-LLM cases
+        logger.info("No placeholders or not using a compatible LLM, calling provider directly", {
+          provider: this.translatorType,
+          textLength: originalString.length,
+          targetLanguage,
+          originalText: originalString.substring(0, 50) + (originalString.length > 50 ? "..." : ""),
+          translatorClass: this.translator.constructor.name,
         });
-        return originalString;
-      };
-      
-      logger.info("About to call translator", {
-        provider: this.translatorType,
-        originalText: originalString,
-        targetLanguage,
-        translatorMethod: typeof this.translator.translate
-      });
 
-      const translatedText = await circuitBreakerManager.execute(
-        `translation-${this.translatorType}`,
-        async () => await this.translator.translate(originalString, targetLanguage),
-        fallbackTranslation,
-        {
-          timeout: config.translation.requestTimeout || 30000,
-          errorThresholdPercentage: 30, // Lower threshold for translation services
-          resetTimeout: 60000 // Longer reset time for translation services
-        }
-      );
+        const fallbackTranslation = async () => {
+          logger.warn("Using fallback translation service", {
+            originalProvider: this.translatorType,
+            targetLanguage,
+          });
+          const fallbackProviders = ["google", "openai", "huggingface"].filter(p => p !== this.translatorType);
+          for (const provider of fallbackProviders) {
+            try {
+              let fallbackTranslatorInstance;
+              switch (provider) {
+                case "google": fallbackTranslatorInstance = new GoogleTranslator(); break;
+                case "openai": fallbackTranslatorInstance = new OpenAITranslator(); break;
+                case "huggingface": fallbackTranslatorInstance = new HuggingFaceTranslator(); break;
+              }
+              const result = await fallbackTranslatorInstance.translate(originalString, targetLanguage);
+              logger.info("Fallback translation successful", { fallbackProvider: provider, originalProvider: this.translatorType });
+              return result;
+            } catch (fallbackError) {
+              logger.warn("Fallback translation failed", { fallbackProvider: provider, error: fallbackError.message });
+              continue;
+            }
+          }
+          logger.error("All translation providers failed, returning original text", { originalProvider: this.translatorType, fallbackProviders });
+          return originalString;
+        };
 
-      logger.info("Translation completed by provider", {
+        translatedText = await circuitBreakerManager.execute(
+          `translation-${this.translatorType}`,
+          async () => await this.translator.translate(originalString, targetLanguage),
+          fallbackTranslation,
+          {
+            timeout: config.translation.requestTimeout || 30000,
+            errorThresholdPercentage: 30,
+            resetTimeout: 60000,
+          }
+        );
+      }
+
+      logger.info("Translation completed by provider/strategy", {
         provider: this.translatorType,
         originalText: originalString,
         translatedText: translatedText,

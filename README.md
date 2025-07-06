@@ -186,6 +186,8 @@ While the core translation engine is powerful and reliable, it has been tested p
 -   **Hardcoded Source Language**: The application currently assumes the source language is English for all translations. Support for dynamic source language detection or selection is planned for a future release.
 -   **Security**: The application currently lacks a dedicated user authentication and authorization layer. Access is open on the network where it is deployed.
 -   **Auditability**: Comprehensive audit logs to track translation history, API key usage, and configuration changes are not yet implemented.
+-   **Complex Nested Placeholders**: The current placeholder tokenization handles simple nesting (e.g., `{{ A_{{B}} }}`) by iterative tokenization. However, very complex or deeply nested placeholder structures might not be parsed as expected and should be tested thoroughly for specific use cases.
+-   **Bidirectional Text (RTL/LTR) with Placeholders**: When translating between Left-to-Right (e.g., English) and Right-to-Left (e.g., Arabic, Hebrew) languages, while Unicode standards generally manage text direction, the precise rendering of strings containing mixed directional text and inserted placeholders (`TOKEN_N` then detokenized) should be carefully reviewed in the target application to ensure correct visual order, especially around punctuation.
 
 ### Future Roadmap
 

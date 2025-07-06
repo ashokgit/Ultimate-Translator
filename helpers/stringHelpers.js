@@ -84,8 +84,88 @@ const shouldTranslate = async (value, key = '', customerId = 'default') => {
   if (isPhoneNumber(value)) return false;
   if (isCoordinate(value)) return false;
   if (isCode(value)) return false;
+
+  // Check for ICU/Handlebars/React-intl patterns
+  const placeholderRegex = /{{\s*\w+\s*}}|{(\w+)}|%\w+/g;
+  if (placeholderRegex.test(value)) {
+    // If placeholders are found, we should attempt to translate,
+    // assuming the PlaceholderSafeTranslator will handle them.
+    return true;
+  }
   
   return true;
+};
+
+/**
+ * Tokenizes a string with placeholders.
+ * @param {string} value - The string to tokenize.
+ * @returns {{tokenizedString: string, tokenMap: Object}} - An object containing the tokenized string and the token map.
+ */
+const tokenizeString = (value) => {
+  // Regex to find placeholders:
+  // - {{ placeholder }} (Handlebars/ICU style)
+  // - {placeholder} (common simple style)
+  // - %placeholder (printf style)
+  // - HTML tags like <tag attr="value"> or </tag>
+  // It avoids matching escaped placeholders like \{{name}}, \{name}, or \%name.
+  // It does not currently avoid escaped HTML tags like \<strong\>, but HTML escaping is usually &lt; &gt;
+  const placeholderRegex = /(?<!\\)({{\s*[\w.-]+\s*}})|(?<!\\){([\w.-]+)}|(?<!\\)(%[\w.-]+)|(<\/?\w+((\s+\w+(?:\s*=\s*(?:"[^"]*"|'[^']*'|[\w-]+))?)*\s*|\s*)\/?>)/g;
+
+  let match;
+  const tokenMap = {};
+  let resultString = value;
+  let tokenIndex = 0;
+  const replacements = [];
+
+  // First pass: find all placeholders and generate tokens
+  // We iterate using placeholderRegex.exec in a loop
+  // Store matches with their original indices to handle replacements correctly later
+  const matches = [];
+  while ((match = placeholderRegex.exec(value)) !== null) {
+    matches.push({
+      original: match[0], // This will be one of the three types, e.g. {{name}}, {id}, %val
+      index: match.index,
+      length: match[0].length
+    });
+  }
+
+  // Process matches in reverse order of their appearance in the string
+  // This avoids index issues when replacing parts of the string
+  for (let i = matches.length - 1; i >= 0; i--) {
+    const currentMatch = matches[i];
+    const placeholder = currentMatch.original;
+
+    // Check if this exact placeholder string has already been assigned a token
+    let token = Object.keys(tokenMap).find(key => tokenMap[key] === placeholder);
+
+    if (!token) {
+      token = `TOKEN_${tokenIndex}`;
+      tokenMap[token] = placeholder;
+      tokenIndex++;
+    }
+
+    // Replace the placeholder at its original position
+    resultString = resultString.substring(0, currentMatch.index) + token + resultString.substring(currentMatch.index + currentMatch.length);
+  }
+
+  return { tokenizedString: resultString, tokenMap };
+};
+
+/**
+ * Detokenizes a string using the provided token map.
+ * @param {string} tokenizedString - The string with tokens.
+ * @param {Object} tokenMap - The map of tokens to original placeholders.
+ * @returns {string} - The detokenized string.
+ */
+const detokenizeString = (tokenizedString, tokenMap) => {
+  let detokenizedString = tokenizedString;
+  for (const token in tokenMap) {
+    const placeholder = tokenMap[token];
+    // Need to escape special characters in token for regex replacement
+    const escapedToken = token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    detokenizedString = detokenizedString.replace(new RegExp(escapedToken, 'g'), placeholder);
+  }
+  return detokenizedString;
 };
 
 /**
@@ -262,5 +342,9 @@ module.exports = {
   getConfigAnalytics,
   
   // Service access
-  configService
+  configService,
+
+  // Tokenization functions
+  tokenizeString,
+  detokenizeString
 };
