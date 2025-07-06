@@ -57,6 +57,27 @@ const isCode = (str) => {
 };
 
 /**
+ * Regex for detecting placeholders (ICU, simple, printf-style) and HTML tags.
+ * Avoids matching escaped placeholders.
+ */
+const comprehensiveDetectionRegex = /(?<!\\)({{\s*[\w.-]+\s*}})|(?<!\\){([\w.-]+)}|(?<!\\)(%[\w.-]+)|(<\/?\w+((\s+\w+(?:\s*=\s*(?:"[^"]*"|'[^']*'|[\w-]+))?)*\s*|\s*)\/?>)/g;
+
+/**
+ * Checks if a given text string contains placeholders or HTML tags
+ * that would require special handling (e.g., tokenization).
+ * @param {string} text - The text to check.
+ * @returns {boolean} - True if special handling is needed, false otherwise.
+ */
+const textNeedsSpecialHandling = (text) => {
+  if (typeof text !== 'string' || text.length === 0) {
+    return false;
+  }
+  // Important: Reset lastIndex for global regexes before using test() in a new context.
+  comprehensiveDetectionRegex.lastIndex = 0;
+  return comprehensiveDetectionRegex.test(text);
+};
+
+/**
  * Enhanced shouldTranslate function with dynamic configuration support
  * @param {string} value - The value to check
  * @param {string} key - The key name (optional)
@@ -346,5 +367,8 @@ module.exports = {
 
   // Tokenization functions
   tokenizeString,
-  detokenizeString
+  detokenizeString,
+
+  // Detection function
+  textNeedsSpecialHandling
 };

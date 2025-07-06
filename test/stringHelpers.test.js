@@ -4,6 +4,7 @@ const {
   shouldTranslate,
   tokenizeString,
   detokenizeString,
+  textNeedsSpecialHandling, // Import the new function
 } = require('../helpers/stringHelpers');
 const TranslationConfigService = require('../services/TranslationConfigService');
 
@@ -235,6 +236,51 @@ describe('stringHelpers', () => {
       };
       const result = detokenizeString(tokenizedResultFromTest, mapFromResultTest);
       expect(result).to.equal("This is \\{{name}} not a placeholder, but {{real_name}} is. Also \\%var and \\{id}. Check <p>\\<strong>tag\\</strong></p>");
+    });
+  });
+
+  describe('textNeedsSpecialHandling', () => {
+    it('should return true for strings with placeholders', () => {
+      expect(textNeedsSpecialHandling("Hello {{name}}")).to.be.true;
+      expect(textNeedsSpecialHandling("User {id}")).to.be.true;
+      expect(textNeedsSpecialHandling("Amount %total%")).to.be.true;
+    });
+
+    it('should return true for strings with HTML tags', () => {
+      expect(textNeedsSpecialHandling("<p>Hello</p>")).to.be.true;
+      expect(textNeedsSpecialHandling("<strong>Warning!</strong>")).to.be.true;
+      expect(textNeedsSpecialHandling("<img src='test.png'/>")).to.be.true;
+    });
+
+    it('should return true for strings with mixed placeholders and HTML', () => {
+      expect(textNeedsSpecialHandling("<p>Hello {{name}}</p>")).to.be.true;
+    });
+
+    it('should return false for strings with no placeholders or HTML', () => {
+      expect(textNeedsSpecialHandling("Just a plain string.")).to.be.false;
+      expect(textNeedsSpecialHandling("")).to.be.false;
+    });
+
+    it('should return false for strings with only escaped placeholders', () => {
+      expect(textNeedsSpecialHandling("This is \\{{name}} only.")).to.be.false;
+      expect(textNeedsSpecialHandling("Escaped \\{id} and \\%var")).to.be.false;
+    });
+
+    it('should return false for strings with only escaped HTML-like sequences (if applicable, current regex does not specifically ignore escaped HTML)', () => {
+      // Current regex for HTML does not check for preceding '\', so '\<p>' would still be seen as a tag.
+      // This test reflects current behavior. If escaped HTML should be ignored, regex would need update.
+      expect(textNeedsSpecialHandling("This is \\<p>escaped\\</p>")).to.be.true; // because <p> and </p> are detected
+    });
+
+    it('should correctly reset lastIndex for global regex', () => {
+      // Test with the same string multiple times to ensure lastIndex is reset
+      const testString = "Hello {{name}}";
+      expect(textNeedsSpecialHandling(testString)).to.be.true; // First call
+      expect(textNeedsSpecialHandling(testString)).to.be.true; // Second call, should still work
+      const nonMatchString = "Hello world";
+      expect(textNeedsSpecialHandling(nonMatchString)).to.be.false; // Test non-match
+      expect(textNeedsSpecialHandling(nonMatchString)).to.be.false; // Test non-match again
+      expect(textNeedsSpecialHandling(testString)).to.be.true; // Test match again
     });
   });
 });

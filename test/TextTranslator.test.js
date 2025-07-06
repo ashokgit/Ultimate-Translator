@@ -1,29 +1,39 @@
 const TextTranslator = require('../translators/TextTranslator');
 const PlaceholderSafeTranslator = require('../translators/PlaceholderSafeTranslator');
 const OpenAITranslator = require('../translators/OpenAITranslator');
-const GoogleTranslator = require('../translators/GoogleTranslator'); // For fallback tests
+const GoogleTranslator = require('../translators/GoogleTranslator');
 const TranslationLog = require('../models/TranslationLog');
-const stringHelpers = require('../helpers/stringHelpers'); // Import the whole module
+const stringHelpers = require('../helpers/stringHelpers');
+const TranslationConfigService = require('../services/TranslationConfigService'); // Import
 const config = require('../config');
-const { expect } = require('chai'); // Using Chai for assertions as per other files
+const { expect } = require('chai');
 
-// Mock underlying translators and services
 jest.mock('../translators/OpenAITranslator');
 jest.mock('../translators/GoogleTranslator');
-jest.mock('../translators/PlaceholderSafeTranslator'); // Will mock its constructor and methods
+jest.mock('../translators/PlaceholderSafeTranslator');
 jest.mock('../models/TranslationLog');
+jest.mock('../services/TranslationConfigService'); // Mock TranslationConfigService
 
 describe('TextTranslator', () => {
   let textTranslator;
   let mockOpenAITranslatorInstance;
-  // mockPlaceholderSafeTranslatorInstance will be set if constructor is called
+  let mockTranslationConfigServiceInstance;
 
   beforeEach(() => {
     OpenAITranslator.mockClear();
     GoogleTranslator.mockClear();
-    PlaceholderSafeTranslator.mockClear(); // Clears constructor mock and instances
+    PlaceholderSafeTranslator.mockClear();
     TranslationLog.findOne.mockReset();
     TranslationLog.findOneAndUpdate.mockReset();
+    TranslationConfigService.mockClear(); // Clear mock for TranslationConfigService
+
+    // Mock TranslationConfigService instance and its methods
+    mockTranslationConfigServiceInstance = {
+      shouldPreserveFormatting: jest.fn().mockResolvedValue(true), // Default to true for PST path
+      initialize: jest.fn().mockResolvedValue(undefined), // Mock initialize
+      initialized: true, // Assume it's initialized
+    };
+    TranslationConfigService.mockImplementation(() => mockTranslationConfigServiceInstance);
 
     config.translation.defaultProvider = 'openai';
     textTranslator = new TextTranslator();
@@ -31,202 +41,188 @@ describe('TextTranslator', () => {
     if (OpenAITranslator.mock.instances.length > 0) {
       mockOpenAITranslatorInstance = OpenAITranslator.mock.instances[0];
     } else {
-      // This case should ideally not happen if TextTranslator constructor works
-      // For safety, create a dummy mock if OpenAITranslator wasn't instantiated
       mockOpenAITranslatorInstance = { translate: jest.fn() };
     }
 
     TranslationLog.findOne.mockResolvedValue(null);
     TranslationLog.findOneAndUpdate.mockResolvedValue({});
+
+    // Spy on stringHelpers.textNeedsSpecialHandling and stringHelpers.tokenizeString for specific tests
+    // but restore them after each test to avoid interference.
+    jest.spyOn(stringHelpers, 'textNeedsSpecialHandling');
+    jest.spyOn(stringHelpers, 'tokenizeString');
   });
 
   afterEach(() => {
-    jest.clearAllMocks(); // Clear Jest mocks
-    // Restore any spied objects if stringHelpers was spied upon
     jest.restoreAllMocks();
   });
 
-  it('should use PlaceholderSafeTranslator for strings with placeholders', async () => {
-    const originalString = "Hello {{name}}!";
-    const targetLanguage = 'es';
-    const expectedTranslation = "Hola {{name}}!";
+  // Helper to simplify translate calls in tests
+  const callTranslate = (originalString, key = 'testKey', custId = 'default') => {
+    return textTranslator.translate(originalString, 'es', false, key, custId);
+  };
+
+  it('should use PlaceholderSafeTranslator if config says preserve, content needs it, and provider is compatible', async () => {
+    const originalString = "Hello {{name}} <p>world</p>!";
+    const expectedTranslation = "Hola {{name}} <p>mundo</p>!";
+    mockTranslationConfigServiceInstance.shouldPreserveFormatting.mockResolvedValue(true);
+    // textNeedsSpecialHandling will be called with the string by the real implementation.
+
     const mockPSTTranslate = jest.fn().mockResolvedValue(expectedTranslation);
     PlaceholderSafeTranslator.mockImplementation(() => ({
       translatePreservingPlaceholders: mockPSTTranslate,
     }));
 
-    const translatedText = await textTranslator.translate(originalString, targetLanguage);
+    const translatedText = await callTranslate(originalString);
 
+    expect(mockTranslationConfigServiceInstance.shouldPreserveFormatting).toHaveBeenCalledWith('testKey', originalString, 'default');
+    expect(stringHelpers.textNeedsSpecialHandling).toHaveBeenCalledWith(originalString);
     expect(PlaceholderSafeTranslator).toHaveBeenCalledTimes(1);
     expect(PlaceholderSafeTranslator).toHaveBeenCalledWith(mockOpenAITranslatorInstance);
-    const { tokenizedString, tokenMap } = stringHelpers.tokenizeString(originalString);
-    expect(mockPSTTranslate).toHaveBeenCalledWith(tokenizedString, tokenMap, targetLanguage);
+
+    const { tokenizedString, tokenMap } = stringHelpers.tokenizeString(originalString); // get actual tokens
+    expect(mockPSTTranslate).toHaveBeenCalledWith(tokenizedString, tokenMap, 'es');
     expect(translatedText).to.equal(expectedTranslation);
-    if(mockOpenAITranslatorInstance.translate) { // Ensure method exists before checking calls
+    if (mockOpenAITranslatorInstance.translate.mock) { // Check if it's a Jest mock
         expect(mockOpenAITranslatorInstance.translate).not.toHaveBeenCalled();
     }
   });
 
-  it('should use PlaceholderSafeTranslator for strings with HTML tags', async () => {
-    const originalString = "<p>Hello <strong>world</strong></p>";
-    const targetLanguage = 'es';
-    const expectedTranslation = "<p>Hola <strong>mundo</strong></p>"; // PST will restore tags
-    const mockPSTTranslate = jest.fn().mockResolvedValue(expectedTranslation);
-    PlaceholderSafeTranslator.mockImplementation(() => ({
-      translatePreservingPlaceholders: mockPSTTranslate,
-    }));
-
-    const translatedText = await textTranslator.translate(originalString, targetLanguage);
-
-    expect(PlaceholderSafeTranslator).toHaveBeenCalledTimes(1);
-    const { tokenizedString, tokenMap } = stringHelpers.tokenizeString(originalString);
-    expect(mockPSTTranslate).toHaveBeenCalledWith(tokenizedString, tokenMap, targetLanguage);
-    expect(translatedText).to.equal(expectedTranslation);
-    if(mockOpenAITranslatorInstance.translate) {
-        expect(mockOpenAITranslatorInstance.translate).not.toHaveBeenCalled();
+  it('should use standard translator if config says NOT to preserve', async () => {
+    const originalString = "Hello {{name}} <p>world</p>!";
+    const expectedTranslation = "Hola {{name}} <p>mundo</p>! (standard)";
+    mockTranslationConfigServiceInstance.shouldPreserveFormatting.mockResolvedValue(false);
+    if (mockOpenAITranslatorInstance.translate.mockResolvedValue) {
+         mockOpenAITranslatorInstance.translate.mockResolvedValue(expectedTranslation);
     }
-  });
 
-  it('should use PlaceholderSafeTranslator for mixed HTML and placeholders', async () => {
-    const originalString = "<p>User: {{username}}</p>";
-    const targetLanguage = 'fr';
-    const expectedTranslation = "<p>Utilisateur: {{username}}</p>";
-    const mockPSTTranslate = jest.fn().mockResolvedValue(expectedTranslation);
-    PlaceholderSafeTranslator.mockImplementation(() => ({
-      translatePreservingPlaceholders: mockPSTTranslate,
-    }));
 
-    const translatedText = await textTranslator.translate(originalString, targetLanguage);
-    expect(PlaceholderSafeTranslator).toHaveBeenCalledTimes(1);
-    const { tokenizedString, tokenMap } = stringHelpers.tokenizeString(originalString);
-    expect(mockPSTTranslate).toHaveBeenCalledWith(tokenizedString, tokenMap, targetLanguage);
+    const translatedText = await callTranslate(originalString);
+
+    expect(mockTranslationConfigServiceInstance.shouldPreserveFormatting).toHaveBeenCalledWith('testKey', originalString, 'default');
+    expect(stringHelpers.textNeedsSpecialHandling).toHaveBeenCalledWith(originalString); // Still called to check content
+    expect(PlaceholderSafeTranslator).not.toHaveBeenCalled();
+    if (mockOpenAITranslatorInstance.translate.mock) {
+        expect(mockOpenAITranslatorInstance.translate).toHaveBeenCalledWith(originalString, 'es');
+    }
     expect(translatedText).to.equal(expectedTranslation);
   });
 
-
-  it('should use standard translator if no placeholders or HTML tags are detected', async () => {
-    const originalString = "Hello world"; // No placeholders or HTML
-    const targetLanguage = 'fr';
-    const expectedTranslation = "Bonjour le monde";
-    if(mockOpenAITranslatorInstance.translate) {
+  it('should use standard translator if content does NOT need special handling, even if config says preserve', async () => {
+    const originalString = "Hello world"; // Plain text
+    const expectedTranslation = "Hola mundo (standard)";
+    mockTranslationConfigServiceInstance.shouldPreserveFormatting.mockResolvedValue(true);
+    // stringHelpers.textNeedsSpecialHandling will return false for "Hello world"
+    if (mockOpenAITranslatorInstance.translate.mockResolvedValue) {
         mockOpenAITranslatorInstance.translate.mockResolvedValue(expectedTranslation);
     }
 
+    const translatedText = await callTranslate(originalString);
 
-    const translatedText = await textTranslator.translate(originalString, targetLanguage);
-
+    expect(mockTranslationConfigServiceInstance.shouldPreserveFormatting).toHaveBeenCalledWith('testKey', originalString, 'default');
+    expect(stringHelpers.textNeedsSpecialHandling).toHaveBeenCalledWith(originalString);
     expect(PlaceholderSafeTranslator).not.toHaveBeenCalled();
-    if(mockOpenAITranslatorInstance.translate) {
-        expect(mockOpenAITranslatorInstance.translate).toHaveBeenCalledTimes(1);
-        expect(mockOpenAITranslatorInstance.translate).toHaveBeenCalledWith(originalString, targetLanguage);
+     if (mockOpenAITranslatorInstance.translate.mock) {
+        expect(mockOpenAITranslatorInstance.translate).toHaveBeenCalledWith(originalString, 'es');
     }
     expect(translatedText).to.equal(expectedTranslation);
   });
 
-  it('should not use PlaceholderSafeTranslator for strings with only escaped placeholders', async () => {
-    const originalString = "This is \\{{name}} and \\<strong>bold\\</strong>";
-    const targetLanguage = 'es';
-    const expectedTranslation = "Esto es \\{{name}} y \\<strong>bold\\</strong>"; // Assuming direct translation
-     if(mockOpenAITranslatorInstance.translate) {
-        mockOpenAITranslatorInstance.translate.mockResolvedValue(expectedTranslation);
-    }
-
-    const translatedText = await textTranslator.translate(originalString, targetLanguage);
-
-    expect(PlaceholderSafeTranslator).not.toHaveBeenCalled();
-     if(mockOpenAITranslatorInstance.translate) {
-        expect(mockOpenAITranslatorInstance.translate).toHaveBeenCalledWith(originalString, targetLanguage);
-    }
-    expect(translatedText).to.equal(expectedTranslation);
-  });
-
-
-  it('should use standard translator if special content present but provider is not OpenAI (or compatible LLM)', async () => {
-    config.translation.defaultProvider = 'google';
+  it('should use standard translator if provider is not compatible, even if config and content say so', async () => {
+    config.translation.defaultProvider = 'google'; // Non-compatible for PST path
     const mockGoogleInstance = { translate: jest.fn() };
     GoogleTranslator.mockImplementation(() => mockGoogleInstance);
     textTranslator = new TextTranslator(); // Re-initialize with Google
 
-    const originalString = "Hello {{name}} to Google!";
-    const targetLanguage = 'de';
-    const expectedTranslation = "Hallo {{name}} zu Google!";
+    const originalString = "Hello {{name}}!";
+    const expectedTranslation = "Hola {{name}}! (google)";
+    mockTranslationConfigServiceInstance.shouldPreserveFormatting.mockResolvedValue(true);
+    // stringHelpers.textNeedsSpecialHandling will return true
     mockGoogleInstance.translate.mockResolvedValue(expectedTranslation);
 
-    const translatedText = await textTranslator.translate(originalString, targetLanguage);
+    const translatedText = await callTranslate(originalString);
 
+    expect(mockTranslationConfigServiceInstance.shouldPreserveFormatting).toHaveBeenCalledWith('testKey', originalString, 'default');
+    expect(stringHelpers.textNeedsSpecialHandling).toHaveBeenCalledWith(originalString);
     expect(PlaceholderSafeTranslator).not.toHaveBeenCalled();
-    expect(mockGoogleInstance.translate).toHaveBeenCalledWith(originalString, targetLanguage);
+    expect(mockGoogleInstance.translate).toHaveBeenCalledWith(originalString, 'es');
     expect(translatedText).to.equal(expectedTranslation);
   });
 
-  it('should fallback to standard translation if PlaceholderSafeTranslator fails', async () => {
+  it('should use standard translation if config and content allow PST, but tokenizeString returns empty map', async () => {
+    const originalString = "<br/>"; // A string that needs special handling
+    const expectedTranslation = "<br/> (translated)";
+    mockTranslationConfigServiceInstance.shouldPreserveFormatting.mockResolvedValue(true);
+
+    // Force tokenizeString to return an empty map for this specific input for this test
+    stringHelpers.tokenizeString.mockReturnValueOnce({ tokenizedString: originalString, tokenMap: {} });
+
+    if (mockOpenAITranslatorInstance.translate.mockResolvedValue) {
+        mockOpenAITranslatorInstance.translate.mockResolvedValue(expectedTranslation);
+    }
+
+    const translatedText = await callTranslate(originalString);
+
+    expect(stringHelpers.tokenizeString).toHaveBeenCalledWith(originalString);
+    expect(PlaceholderSafeTranslator).not.toHaveBeenCalled(); // PST constructor not called
+    if (mockOpenAITranslatorInstance.translate.mock) {
+        expect(mockOpenAITranslatorInstance.translate).toHaveBeenCalledWith(originalString, 'es');
+    }
+    expect(translatedText).to.equal(expectedTranslation);
+  });
+
+  it('should correctly pass key and customerId to shouldPreserveFormatting', async () => {
+    const originalString = "Test string {{placeholder}}";
+    const customKey = "my.custom.key";
+    const customCustId = "customerX";
+    mockTranslationConfigServiceInstance.shouldPreserveFormatting.mockResolvedValue(false); // Force standard path
+     if (mockOpenAITranslatorInstance.translate.mockResolvedValue) {
+        mockOpenAITranslatorInstance.translate.mockResolvedValue("Translated");
+    }
+
+    await callTranslate(originalString, customKey, customCustId);
+    expect(mockTranslationConfigServiceInstance.shouldPreserveFormatting).toHaveBeenCalledWith(customKey, originalString, customCustId);
+  });
+
+  // Keep existing tests for caching, general fallback (PST failure), etc., updating signatures as needed.
+  it('PST FALLBACK: should fallback to standard translation if PlaceholderSafeTranslator fails', async () => {
     const originalString = "Fallback test {{placeholder}}";
-    const targetLanguage = 'it';
     const expectedFallbackTranslation = "Test di fallback {{placeholder}}";
+    mockTranslationConfigServiceInstance.shouldPreserveFormatting.mockResolvedValue(true);
+    // textNeedsSpecialHandling will be true
+
     PlaceholderSafeTranslator.mockImplementation(() => ({
       translatePreservingPlaceholders: jest.fn().mockRejectedValue(new Error("PST Error")),
     }));
-     if(mockOpenAITranslatorInstance.translate) {
+    if (mockOpenAITranslatorInstance.translate.mockResolvedValue) {
         mockOpenAITranslatorInstance.translate.mockResolvedValue(expectedFallbackTranslation);
     }
 
-    const translatedText = await textTranslator.translate(originalString, targetLanguage);
+
+    const translatedText = await callTranslate(originalString);
 
     expect(PlaceholderSafeTranslator).toHaveBeenCalledTimes(1);
-    if(mockOpenAITranslatorInstance.translate) {
-        expect(mockOpenAITranslatorInstance.translate).toHaveBeenCalledWith(originalString, targetLanguage);
+    if (mockOpenAITranslatorInstance.translate.mock) {
+        expect(mockOpenAITranslatorInstance.translate).toHaveBeenCalledWith(originalString, 'es');
     }
     expect(translatedText).to.equal(expectedFallbackTranslation);
   });
 
-  it('should use cache if available, even with special content', async () => {
+  it('CACHE: should use cache if available, regardless of config or content', async () => {
     const originalString = "Cached <p>{{item}}</p>";
-    const targetLanguage = 'es';
     const cachedTranslation = "Cacheado <p>{{item}}</p>";
-    TranslationLog.findOne.mockResolvedValue({ text: originalString, lang: targetLanguage, translated_text: cachedTranslation });
+    TranslationLog.findOne.mockResolvedValue({ text: originalString, lang: 'es', translated_text: cachedTranslation });
 
-    const translatedText = await textTranslator.translate(originalString, targetLanguage);
+    const translatedText = await callTranslate(originalString);
 
     expect(translatedText).to.equal(cachedTranslation);
+    expect(mockTranslationConfigServiceInstance.shouldPreserveFormatting).not.toHaveBeenCalled();
+    expect(stringHelpers.textNeedsSpecialHandling).not.toHaveBeenCalled();
     expect(PlaceholderSafeTranslator).not.toHaveBeenCalled();
-    if(mockOpenAITranslatorInstance.translate) {
+    if (mockOpenAITranslatorInstance.translate.mock) {
         expect(mockOpenAITranslatorInstance.translate).not.toHaveBeenCalled();
     }
-    expect(TranslationLog.findOne).toHaveBeenCalledWith({ text: originalString, lang: targetLanguage });
+    expect(TranslationLog.findOne).toHaveBeenCalledWith({ text: originalString, lang: 'es' });
   });
 
-  it('should use standard translation if comprehensiveDetectionRegex matches but tokenizeString returns empty map', async () => {
-    const originalString = "<br/>"; // This will be tokenized by the actual tokenizeString
-    const targetLanguage = 'fr';
-    const expectedTranslation = "<br/> (translated)";
-
-    // Spy on stringHelpers.tokenizeString and force it to return an empty map for this specific input
-    const tokenizeSpy = jest.spyOn(stringHelpers, 'tokenizeString').mockReturnValue({
-      tokenizedString: originalString,
-      tokenMap: {}
-    });
-
-    if(mockOpenAITranslatorInstance.translate) {
-        mockOpenAITranslatorInstance.translate.mockResolvedValue(expectedTranslation);
-    }
-
-    const translatedText = await textTranslator.translate(originalString, targetLanguage);
-
-    expect(tokenizeSpy).toHaveBeenCalledWith(originalString);
-    // PlaceholderSafeTranslator constructor should not be called if tokenMap is empty directly after tokenizeString
-    // The current logic in TextTranslator.js:
-    // if (needsSpecialHandling && this.translator instanceof OpenAITranslator) {
-    //   const { tokenizedString, tokenMap } = tokenizeString(originalString);
-    //   if (Object.keys(tokenMap).length > 0) {
-    //     const safeTranslator = new PlaceholderSafeTranslator(this.translator); <--- THIS LINE
-    //     ...
-    // So, PlaceholderSafeTranslator constructor itself won't be called.
-    expect(PlaceholderSafeTranslator).not.toHaveBeenCalled();
-    if(mockOpenAITranslatorInstance.translate) {
-        expect(mockOpenAITranslatorInstance.translate).toHaveBeenCalledWith(originalString, targetLanguage);
-    }
-    expect(translatedText).to.equal(expectedTranslation);
-
-    tokenizeSpy.mockRestore();
-  });
 });

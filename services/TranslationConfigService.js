@@ -14,6 +14,7 @@ class TranslationConfigService {
     this.defaultConfig = this.getDefaultConfig();
     this.patternFrequency = new Map(); // Track frequency of detected patterns
     this.initialized = false;
+    this.globalDefaultPreserveFormatting = false; // New global default for the flag if missing in rule
   }
 
   /**
@@ -538,6 +539,73 @@ class TranslationConfigService {
     
     return overrides;
   }
+
+  /**
+   * Determine if formatting and placeholders should be preserved based on rules.
+   * @param {string} key - The key of the string.
+   * @param {string} value - The string value itself.
+   * @param {string} customerId - The customer ID.
+   * @returns {Promise<boolean>} - True if preservation should be applied, false otherwise.
+   */
+  async shouldPreserveFormatting(key, value, customerId = 'default') {
+    if (!this.initialized) {
+      await this.initialize();
+    }
+
+    const customerSpecificConfig = this.configCache.get(customerId);
+    const configToUse = customerSpecificConfig || this.configCache.get('default') || this.defaultConfig;
+
+    if (!configToUse || !configToUse.rules || !Array.isArray(configToUse.rules)) {
+        logger.debug("No rules found for customer or default, using global default for preserveFormatting", { customerId, globalDefault: this.globalDefaultPreserveFormatting });
+        return this.globalDefaultPreserveFormatting;
+    }
+
+    // Find the most specific matching rule.
+    // For simplicity, let's assume rules are not ordered by specificity yet,
+    // and we take the first rule that matches.
+    // A more sophisticated system might involve rule priorities or specificty scores.
+    for (const rule of configToUse.rules) {
+      let matches = false;
+      switch (rule.type) {
+        case 'key_pattern':
+          if (new RegExp(rule.pattern).test(key)) {
+            matches = true;
+          }
+          break;
+        case 'key_exact':
+          if (key === rule.pattern) {
+            matches = true;
+          }
+          break;
+        case 'content_type': // Assuming 'value' might give a hint or a broader context object is needed
+          // This rule type might need more context than just key/value to match properly.
+          // For now, let's assume it could match based on value characteristics if simple.
+          if (typeof value === 'string' && rule.pattern && new RegExp(rule.pattern).test(value)) {
+             // Example: if rule.pattern was a regex for "markdown-like-text"
+            matches = true;
+          }
+          break;
+        // Add other rule types as necessary
+      }
+
+      if (matches) {
+        logger.debug("Matching rule found for preserveFormatting check", { customerId, key, ruleId: rule.id, ruleAction: rule.action });
+        if (typeof rule.preserveFormattingAndPlaceholders === 'boolean') {
+          return rule.preserveFormattingAndPlaceholders;
+        } else {
+          // If flag is missing on the specific rule, use the global default.
+          logger.debug("preserveFormattingAndPlaceholders flag missing on matched rule, using global default", { ruleId: rule.id, globalDefault: this.globalDefaultPreserveFormatting });
+          return this.globalDefaultPreserveFormatting;
+        }
+      }
+    }
+
+    // No specific rule matched, or no rules defined for customer.
+    // Consider if there should be a customer-level default for 'preserveFormattingAndPlaceholders'
+    // For now, fall back to the global default if no rules matched.
+    logger.debug("No specific rule matched for preserveFormatting, using global default", { customerId, key, globalDefault: this.globalDefaultPreserveFormatting });
+    return this.globalDefaultPreserveFormatting;
+  }
 }
 
-module.exports = TranslationConfigService; 
+module.exports = TranslationConfigService;

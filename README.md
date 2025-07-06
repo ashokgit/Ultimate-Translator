@@ -139,6 +139,7 @@ Beyond simple string-for-string translation, Easy AI Translator provides an ente
 - **Intelligent Content-Aware Translation**: The system automatically detects and preserves non-translatable elements.
     - It intelligently skips over IDs, slugs, URLs, currency values, and code snippets, preventing data corruption.
     - Based on a comprehensive set of rules (`translation-rules.json`) that you can customize and extend.
+    - **Configurable Formatting Preservation**: For text that contains placeholders (e.g., `{{name}}`, `{count}`) or HTML tags, you can define rules in `translation-rules.json` to enable a special preservation mode. When enabled for a matching rule, this mode tokenizes these elements, sends the tokenized string to compatible LLMs (like OpenAI) with instructions to preserve tokens, and then restores the original placeholders/HTML after translation. This helps maintain structural integrity and variable functionality. This feature is controlled by the `preserveFormattingAndPlaceholders` boolean flag (defaults to `false` if unspecified in a rule for backward compatibility) within each rule definition.
 
 ![Translation Configuration](public/images/TranslationConfiguration.png)
 

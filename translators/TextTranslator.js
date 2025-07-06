@@ -4,13 +4,27 @@ const TranslationLog = require("../models/TranslationLog");
 const GoogleTranslator = require("./GoogleTranslator");
 const HuggingFaceTranslator = require("./HuggingFaceTranslator");
 const OpenAITranslator = require("./OpenAITranslator");
-const PlaceholderSafeTranslator = require("./PlaceholderSafeTranslator"); // Import the new translator
-const { tokenizeString, shouldTranslateSync } = require("../helpers/stringHelpers"); // Import tokenizer and shouldTranslateSync
+const PlaceholderSafeTranslator = require("./PlaceholderSafeTranslator");
+const stringHelpers = require("../helpers/stringHelpers"); // Import all stringHelpers
+const TranslationConfigService = require('../services/TranslationConfigService'); // Import TranslationConfigService
 const circuitBreakerManager = require("../utils/circuitBreaker");
 const performanceMonitor = require("../utils/performanceMonitor");
 
 class TextTranslator {
   constructor() {
+    // Initialize TranslationConfigService instance
+    this.translationConfigService = new TranslationConfigService();
+    // It's crucial that translationConfigService is initialized, e.g., by calling its own initialize method.
+    // For simplicity here, we assume it can be used directly or its methods handle self-initialization.
+    // A better pattern might be to ensure it's initialized at app startup and passed in or retrieved as a singleton.
+    // For now, let's ensure it gets initialized if not already.
+    if (!this.translationConfigService.initialized) {
+        this.translationConfigService.initialize().catch(err => {
+            logger.error("Failed to initialize TranslationConfigService in TextTranslator constructor", { error: err.message });
+            // Depending on requirements, might want to throw or handle this more gracefully
+        });
+    }
+
     const defaultTranslator = config.translation.defaultProvider;
 
     try {
@@ -44,7 +58,16 @@ class TextTranslator {
     }
   }
 
-  async translate(originalString, targetLanguage, skipCache = false) {
+  /**
+   * Translates a string.
+   * @param {string} originalString - The string to translate.
+   * @param {string} targetLanguage - The language to translate to.
+   * @param {boolean} [skipCache=false] - Whether to skip cache lookup.
+   * @param {string} [originalStringKey=''] - The key associated with the original string (for config lookup).
+   * @param {string} [customerId='default'] - The customer ID (for config lookup).
+   * @returns {Promise<string>} - The translated string.
+   */
+  async translate(originalString, targetLanguage, skipCache = false, originalStringKey = '', customerId = 'default') {
     const startTime = Date.now();
 
     try {
@@ -68,21 +91,21 @@ class TextTranslator {
         }
       }
 
-      // Check for placeholders or HTML tags to determine if PlaceholderSafeTranslator should be used
-      // This regex should align with what tokenizeString can handle (placeholders + HTML tags)
-      // and ignore escaped placeholders.
-      const comprehensiveDetectionRegex = /(?<!\\)({{\s*[\w.-]+\s*}})|(?<!\\){([\w.-]+)}|(?<!\\)(%[\w.-]+)|(<\/?\w+((\s+\w+(?:\s*=\s*(?:"[^"]*"|'[^']*'|[\w-]+))?)*\s*|\s*)\/?>)/g;
-      const needsSpecialHandling = comprehensiveDetectionRegex.test(originalString);
+      // Determine if special handling (placeholder/HTML preservation) should be used
+      const configSaysPreserve = await this.translationConfigService.shouldPreserveFormatting(originalStringKey, originalString, customerId);
+      const contentNeedsSpecialHandling = stringHelpers.textNeedsSpecialHandling(originalString);
 
       let translatedText;
 
-      if (needsSpecialHandling && this.translator instanceof OpenAITranslator) { // Or any other LLM that can handle instructions
-        logger.info("Placeholders or HTML tags detected, using PlaceholderSafeTranslator", {
+      if (configSaysPreserve && contentNeedsSpecialHandling && this.translator instanceof OpenAITranslator) { // Or any other LLM that can handle instructions
+        logger.info("Preservation active and content eligible, using PlaceholderSafeTranslator", {
           provider: this.translatorType,
+          originalStringKey,
+          customerId,
           textLength: originalString.length,
           targetLanguage,
         });
-        const { tokenizedString, tokenMap } = tokenizeString(originalString);
+        const { tokenizedString, tokenMap } = stringHelpers.tokenizeString(originalString);
         if (Object.keys(tokenMap).length > 0) {
           const safeTranslator = new PlaceholderSafeTranslator(this.translator);
           try {
@@ -97,18 +120,20 @@ class TextTranslator {
               provider: this.translatorType,
               error: safeTranslateError.message,
             });
-            // Fallback to standard translation if PlaceholderSafeTranslator fails
-            // The circuit breaker below will handle further fallbacks if this also fails
             translatedText = await this.translator.translate(originalString, targetLanguage);
           }
         } else {
-          // No actual tokens were generated, proceed with standard translation
-          logger.info("Placeholder pattern matched, but no specific tokens generated, proceeding with standard translation.", { provider: this.translatorType });
+          logger.info("Content initially marked for special handling, but no tokens generated by tokenizeString. Proceeding with standard translation.", { provider: this.translatorType, originalStringKey, customerId });
           translatedText = await this.translator.translate(originalString, targetLanguage);
         }
       } else {
-        // Perform actual translation with circuit breaker protection for non-placeholder or non-LLM cases
-        logger.info("No placeholders or not using a compatible LLM, calling provider directly", {
+        logger.info("Using standard translation path", {
+          provider: this.translatorType,
+          configSaysPreserve,
+          contentNeedsSpecialHandling,
+          isCompatibleLLM: this.translator instanceof OpenAITranslator,
+          originalStringKey,
+          customerId,
           provider: this.translatorType,
           textLength: originalString.length,
           targetLanguage,
