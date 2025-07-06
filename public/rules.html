@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Translation Rules Management</title>
+    <link rel="stylesheet" href="css/rules.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Translation Rules Management</h1>
+        <p>Manage the rules that determine which keys and values are not translated.</p>
+        
+        <div class="controls">
+            <button id="saveButton" class="btn btn-primary">Save Changes</button>
+            <a href="/" class="btn btn-secondary">Back to Home</a>
+        </div>
+        
+        <div id="rules-container">
+            <!-- Rules will be loaded here dynamically -->
+        </div>
+
+        <div id="notification" class="alert" style="display:none;"></div>
+    </div>
+
+    <script src="js/rules.js"></script>
+</body>
+</html> 

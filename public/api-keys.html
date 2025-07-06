@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Key Management</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .card { border: 1px solid #ddd; padding: 20px; margin: 20px 0; border-radius: 5px; }
+        .form-group { margin: 10px 0; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input, select, textarea { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 3px; }
+        button { padding: 10px 20px; margin: 5px; border: none; border-radius: 3px; cursor: pointer; }
+        .btn-primary { background: #007bff; color: white; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-danger { background: #dc3545; color: white; }
+        .alert { padding: 10px; margin: 10px 0; border-radius: 3px; }
+        .alert-success { background: #d4edda; color: #155724; }
+        .alert-danger { background: #f8d7da; color: #721c24; }
+        .api-key-item { border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 5px; }
+        .status { padding: 3px 8px; border-radius: 3px; font-size: 12px; }
+        .status-active { background: #d4edda; color: #155724; }
+        .status-inactive { background: #f8d7da; color: #721c24; }
+        .status-default { background: #d1ecf1; color: #0c5460; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>API Key Management</h1>
+        
+        <div class="card">
+            <h2>Add New API Key</h2>
+            <form id="addKeyForm">
+                <div class="form-group">
+                    <label>Provider:</label>
+                    <select id="provider" required>
+                        <option value="">Select Provider</option>
+                        <option value="openai">OpenAI</option>
+                        <option value="huggingface">HuggingFace</option>
+                        <option value="google">Google Translate</option>
+                        <option value="custom">Custom</option>
+                    </select>
+                </div>
+                
+                <div class="form-group" id="model-group" style="display:none;">
+                    <label>Translation Model:</label>
+                    <select id="model">
+                      <option value="gpt-4o">GPT 4o – Full multimodal, top-quality nuance (3% error)</option>
+                      <option value="gpt-4o-mini">GPT 4o‑Mini – Same style, ~60% cheaper, fast bulk</option>
+                      <option value="gpt-4.1">GPT 4.1 – High-speed, 1M‑token context, excellent literal accuracy</option>
+                      <option value="gpt-4.1-mini">GPT 4.1‑Mini – Near top-tier quality at mid cost</option>
+                      <option value="gpt-4.1-nano">GPT 4.1‑Nano – Ultra-cheap, suitable for massive volume</option>
+                      <option value="gpt-4.5">GPT 4.5 – Very high accuracy but phased out soon (expensive)</option>
+                      <option value="gpt-4">GPT 4 – Classic standard, balanced accuracy & cost</option>
+                      <option value="gpt-3.5-turbo">GPT 3.5‑Turbo – Basic, budget-friendly translation</option>
+                    </select>
+                  </div>
+                
+                <div class="form-group">
+                    <label>Name:</label>
+                    <input type="text" id="name" required placeholder="e.g., Production OpenAI Key">
+                </div>
+                
+                <div class="form-group">
+                    <label>Description:</label>
+                    <textarea id="description" rows="3" placeholder="Optional description"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label>API Key:</label>
+                    <input type="password" id="apiKey" required placeholder="Enter your API key">
+                </div>
+                
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="isDefault"> Set as default for this provider
+                    </label>
+                </div>
+                
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="isActive" checked> Active
+                    </label>
+                </div>
+                
+                <button type="submit" class="btn-primary">Add API Key</button>
+                <button type="button" class="btn-success" onclick="testCurrentKey()">Test Key</button>
+            </form>
+        </div>
+        
+        <div class="card">
+            <h2>API Keys</h2>
+            <button onclick="loadApiKeys()" class="btn-primary">Refresh</button>
+            <div id="apiKeysList"></div>
+        </div>
+        
+        <div class="card">
+            <h2>Statistics</h2>
+            <div id="stats"></div>
+        </div>
+    </div>
+
+    <script>
+        // Load API keys on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadApiKeys();
+            loadStats();
+        });
+
+        // Handle form submission
+        document.getElementById('addKeyForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = {
+                provider: document.getElementById('provider').value,
+                name: document.getElementById('name').value,
+                description: document.getElementById('description').value,
+                apiKey: document.getElementById('apiKey').value,
+                isDefault: document.getElementById('isDefault').checked,
+                isActive: document.getElementById('isActive').checked
+            };
+            if (formData.provider === 'openai') {
+                formData.config = { model: document.getElementById('model').value };
+            }
+
+            try {
+                const response = await fetch('/api/v1/api-keys', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formData)
+                });
+
+                if (response.ok) {
+                    showAlert('API key added successfully!', 'success');
+                    this.reset();
+                    loadApiKeys();
+                    loadStats();
+                } else {
+                    const error = await response.json();
+                    showAlert(`Error: ${error.message}`, 'danger');
+                }
+            } catch (error) {
+                showAlert('Error adding API key', 'danger');
+            }
+        });
+
+        // Load API keys
+        async function loadApiKeys() {
+            try {
+                const response = await fetch('/api/v1/api-keys');
+                if (response.ok) {
+                    const data = await response.json();
+                    renderApiKeys(data.data);
+                } else {
+                    showAlert('Error loading API keys', 'danger');
+                }
+            } catch (error) {
+                showAlert('Error loading API keys', 'danger');
+            }
+        }
+
+        // Render API keys
+        let editingKeyId = null;
+        function renderApiKeys(keys) {
+            const container = document.getElementById('apiKeysList');
+            
+            if (keys.length === 0) {
+                container.innerHTML = '<p>No API keys found. Add your first key above.</p>';
+                return;
+            }
+
+            container.innerHTML = keys.map(key => {
+                const safeId = key._id || key.id || '';
+                if (editingKeyId === safeId) {
+                    // Render edit form for this key
+                    return `
+                    <form class="api-key-item" onsubmit="return window.saveEditApiKey(event, '${safeId}')">
+                        <div class="form-group">
+                            <label>Name:</label>
+                            <input type="text" id="edit-name-${safeId}" value="${key.name}" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Description:</label>
+                            <textarea id="edit-description-${safeId}" rows="2">${key.description || ''}</textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Status:</label>
+                            <select id="edit-status-${safeId}">
+                                <option value="true" ${key.isActive ? 'selected' : ''}>Active</option>
+                                <option value="false" ${!key.isActive ? 'selected' : ''}>Inactive</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>API Key (leave blank to keep unchanged):</label>
+                            <input type="password" id="edit-apiKey-${safeId}" placeholder="••••••••">
+                        </div>
+                        ${key.provider === 'openai' ? `
+                        <div class="form-group">
+                            <label>Model:</label>
+                            <select id="edit-model-${safeId}">
+                                <option value="gpt-4o" ${key.config && key.config.model === 'gpt-4o' ? 'selected' : ''}>gpt-4o</option>
+                                <option value="gpt-4o-mini" ${key.config && key.config.model === 'gpt-4o-mini' ? 'selected' : ''}>gpt-4o-mini</option>
+                                <option value="gpt-4.1" ${key.config && key.config.model === 'gpt-4.1' ? 'selected' : ''}>gpt-4.1</option>
+                                <option value="gpt-4.1-mini" ${key.config && key.config.model === 'gpt-4.1-mini' ? 'selected' : ''}>gpt-4.1-mini</option>
+                                <option value="gpt-4.1-nano" ${key.config && key.config.model === 'gpt-4.1-nano' ? 'selected' : ''}>gpt-4.1-nano</option>
+                                <option value="gpt-4.5" ${key.config && key.config.model === 'gpt-4.5' ? 'selected' : ''}>gpt-4.5</option>
+                                <option value="gpt-4" ${key.config && key.config.model === 'gpt-4' ? 'selected' : ''}>gpt-4</option>
+                                <option value="gpt-3.5-turbo" ${key.config && key.config.model === 'gpt-3.5-turbo' ? 'selected' : ''}>gpt-3.5-turbo</option>
+                            </select>
+                        </div>
+                        ` : ''}
+                        <button type="submit" class="btn-success">Save</button>
+                        <button type="button" class="btn-danger" onclick="window.cancelEditApiKey()">Cancel</button>
+                    </form>
+                    `;
+                } else {
+                    // Normal display
+                    return `
+                    <div class="api-key-item">
+                        <h3>${key.name}</h3>
+                        <p><strong>Provider:</strong> ${key.provider.toUpperCase()}</p>
+                        <p><strong>Usage:</strong> ${key.usageCount || 0} times</p>
+                        <p><strong>Last Used:</strong> ${key.lastUsed ? new Date(key.lastUsed).toLocaleDateString() : 'Never'}</p>
+                        ${key.description ? `<p><strong>Description:</strong> ${key.description}</p>` : ''}
+                        <div style="margin: 10px 0;">
+                            ${key.isDefault ? '<span class="status status-default">Default</span>' : ''}
+                            ${key.isActive ? '<span class="status status-active">Active</span>' : '<span class="status status-inactive">Inactive</span>'}
+                        </div>
+                        <div>
+                            <button onclick="testApiKey('${safeId}')" class="btn-success">Test</button>
+                            ${!key.isDefault ? `<button onclick="setDefault('${safeId}')" class="btn-primary">Set Default</button>` : ''}
+                            <button onclick="window.startEditApiKey('${safeId}')" class="btn-primary">Edit</button>
+                            <button onclick="deleteApiKey('${safeId}')" class="btn-danger">Delete</button>
+                        </div>
+                    </div>
+                    `;
+                }
+            }).join('');
+        }
+
+        // Start editing a key
+        window.startEditApiKey = function(id) {
+            editingKeyId = id;
+            loadApiKeys();
+        }
+
+        // Cancel editing
+        window.cancelEditApiKey = function() {
+            editingKeyId = null;
+            loadApiKeys();
+        }
+
+        // Save edited key
+        window.saveEditApiKey = async function(event, id) {
+            event.preventDefault();
+            if (!id) {
+                showAlert('Missing key ID for update!', 'danger');
+                return false;
+            }
+            const name = document.getElementById(`edit-name-${id}`).value;
+            const description = document.getElementById(`edit-description-${id}`).value;
+            const isActive = document.getElementById(`edit-status-${id}`).value === 'true';
+            const apiKey = document.getElementById(`edit-apiKey-${id}`).value;
+            const updateData = { name, description, isActive };
+            if (apiKey) updateData.apiKey = apiKey;
+            // Add model if OpenAI
+            const modelSelect = document.getElementById(`edit-model-${id}`);
+            if (modelSelect) {
+                updateData.config = { model: modelSelect.value };
+            }
+            try {
+                const response = await fetch(`/api/v1/api-keys/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(updateData)
+                });
+                if (response.ok) {
+                    showAlert('API key updated successfully!', 'success');
+                    editingKeyId = null;
+                    loadApiKeys();
+                } else {
+                    const error = await response.json();
+                    showAlert(`Error: ${error.message}`, 'danger');
+                }
+            } catch (error) {
+                showAlert('Error updating API key', 'danger');
+            }
+            return false;
+        }
+
+        // Load statistics
+        async function loadStats() {
+            try {
+                const response = await fetch('/api/v1/api-keys/stats');
+                if (response.ok) {
+                    const data = await response.json();
+                    renderStats(data.data);
+                }
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        }
+
+        // Render statistics
+        function renderStats(stats) {
+            const container = document.getElementById('stats');
+            container.innerHTML = `
+                <p><strong>Total API Keys:</strong> ${stats.length || 0}</p>
+                <p><strong>Active Keys:</strong> ${stats.filter(s => s.activeKeys > 0).length}</p>
+                <p><strong>Default Keys:</strong> ${stats.filter(s => s.defaultKeys > 0).length}</p>
+            `;
+        }
+
+        // Test API key
+        async function testApiKey(id) {
+            try {
+                const response = await fetch(`/api/v1/api-keys/${id}/test`, {
+                    method: 'POST'
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    showAlert(`Test successful: ${data.data.testResult.message}`, 'success');
+                } else {
+                    const error = await response.json();
+                    showAlert(`Test failed: ${error.message}`, 'danger');
+                }
+            } catch (error) {
+                showAlert('Error testing API key', 'danger');
+            }
+        }
+
+        // Test current key from form
+        async function testCurrentKey() {
+            const apiKey = document.getElementById('apiKey').value;
+            const provider = document.getElementById('provider').value;
+            
+            if (!apiKey || !provider) {
+                showAlert('Please enter API key and select provider', 'danger');
+                return;
+            }
+
+            showAlert('Testing API key... (This feature needs backend implementation)', 'success');
+        }
+
+        // Set default API key
+        async function setDefault(id) {
+            try {
+                const response = await fetch(`/api/v1/api-keys/${id}/default`, {
+                    method: 'PUT'
+                });
+
+                if (response.ok) {
+                    showAlert('Default API key set successfully!', 'success');
+                    loadApiKeys();
+                } else {
+                    const error = await response.json();
+                    showAlert(`Error: ${error.message}`, 'danger');
+                }
+            } catch (error) {
+                showAlert('Error setting default API key', 'danger');
+            }
+        }
+
+        // Delete API key
+        async function deleteApiKey(id) {
+            if (!confirm('Are you sure you want to delete this API key?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/v1/api-keys/${id}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    showAlert('API key deleted successfully!', 'success');
+                    loadApiKeys();
+                    loadStats();
+                } else {
+                    const error = await response.json();
+                    showAlert(`Error: ${error.message}`, 'danger');
+                }
+            } catch (error) {
+                showAlert('Error deleting API key', 'danger');
+            }
+        }
+
+        // Show alert
+        function showAlert(message, type) {
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type}`;
+            alert.textContent = message;
+            
+            document.querySelector('.container').insertBefore(alert, document.querySelector('.card'));
+            
+            setTimeout(() => alert.remove(), 5000);
+        }
+
+        document.getElementById('provider').addEventListener('change', function() {
+            var modelGroup = document.getElementById('model-group');
+            if (this.value === 'openai') {
+                modelGroup.style.display = '';
+            } else {
+                modelGroup.style.display = 'none';
+            }
+        });
+        // Show model dropdown if OpenAI is selected on load
+        if (document.getElementById('provider').value === 'openai') {
+            document.getElementById('model-group').style.display = '';
+        }
+    </script>
+</body>
+</html> 
