@@ -90,17 +90,33 @@ Before you can translate, connect your favorite providers. Easy AI Translator pu
 - **Add API Keys**: Go to the "API Key Management" section. Here, you can securely add and encrypt keys for **Google Translate**, **OpenAI (GPT)**, or even your own self-hosted **HuggingFace** models for maximum privacy and control.
 - **Set a Default**: Choose one key as your default for quick, everyday translations.
 
+![API Key Configuration](public/images/api-key-configs.png)
+
 #### 2. Translate Anything, Instantly
 Easy AI Translator is built to handle any translation task, from a single word to complex, structured data.
 
 - **Simple Text Translation**: Start with the "Text Translation" tool to test your setup. It's a great way to see the speed and quality of your chosen provider.
+
+![Simple String Translation](public/images/simple-string-translations.png)
+
 - **Full Web Page Translation**: Drop any URL into the "Page Translation" service and watch as Easy AI Translator renders a fully translated version in real-time.
 - **Intelligent JSON Translation**: For developers, this is where the magic happens. Translate complex JSON objects without corrupting your data. Our intelligent engine automatically detects and preserves keys, IDs, URLs, and other non-translatable elements, ensuring your data structure remains intact. Explore the `/api/v1/sample/{type}` endpoint to see this in action with sample e-commerce or technical data.
+
+Here's an example of how the translator handles complex JSON, preserving the structure and only translating the values:
+
+**Source Language (English):**
+![Source JSON Example](public/images/source-language-json-example.png)
+
+**Translated to Destination Language (e.g., Spanish):**
+![Destination JSON Example](public/images/destination-language-json-example.png)
 
 #### 3. Manage and Scale with Confidence
 Keep track of your work and rely on a system built for performance.
 
 - **Translation Management**: Visit the "Translation Management" dashboard to view, manage, and revisit all your previously translated pages.
+
+![Review and Compare Translations](public/images/review-and-compare.png)
+
 - **Built for Scale**: Behind the scenes, the system is optimized with caching, circuit breakers, and automatic provider fallbacks to ensure reliability and performance, even when external services are slow.
 
 ### For Developers: A Powerful API Awaits
@@ -123,6 +139,8 @@ Beyond simple string-for-string translation, Easy AI Translator provides an ente
 - **Intelligent Content-Aware Translation**: The system automatically detects and preserves non-translatable elements.
     - It intelligently skips over IDs, slugs, URLs, currency values, and code snippets, preventing data corruption.
     - Based on a comprehensive set of rules (`translation-rules.json`) that you can customize and extend.
+
+![Translation Configuration](public/images/TranslationConfiguration.png)
 
 - **Adaptive & Learning Engine**: For SaaS products with diverse customer needs, the system can be configured to learn from your data patterns, continuously improving its accuracy and reducing the need for manual oversight.
 
