@@ -452,21 +452,30 @@
         <div class="form-group">
           <label for="filter-language" class="form-label">Language</label>
           <select id="filter-language" class="form-select">
-            <option value="">All Languages</option>
-            <option value="en">English</option>
-            <option value="es">Spanish (Español)</option>
-            <option value="fr">French (Français)</option>
-            <option value="de">German (Deutsch)</option>
-            <option value="it">Italian (Italiano)</option>
-            <option value="pt">Portuguese (Português)</option>
-            <option value="ru">Russian (Русский)</option>
-            <option value="ja">Japanese (日本語)</option>
-            <option value="ko">Korean (한국어)</option>
-            <option value="zh">Chinese (中文)</option>
-            <option value="ar">Arabic (العربية)</option>
-            <option value="hi">Hindi (हिन्दी)</option>
+            <option value="">Select Language</option>
+            <!-- Options will be populated dynamically -->
           </select>
         </div>
+
+        <script>
+          document.addEventListener("DOMContentLoaded", function () {
+            const languageSelect = document.getElementById("filter-language");
+
+            // Fetch and populate supported languages
+            fetch("/api/v1/supported-languages")
+              .then((response) => response.json())
+              .then((languages) => {
+                languages.forEach((lang) => {
+                  const option = document.createElement("option");
+                  option.value = lang.code;
+                  option.textContent = lang.name;
+                  languageSelect.appendChild(option);
+                });
+              })
+              .catch((error) => console.error("Error fetching languages:", error));
+          });
+
+        </script>
 
         <div class="form-group">
           <label for="filter-model" class="form-label">Model Name</label>

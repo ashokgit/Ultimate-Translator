@@ -15,6 +15,7 @@ const {
   translationFilter,
   updateTranslation,
   filterByUrl,
+  retranslateField,
 } = require("../controllers/TranslateController");
 const axios = require("axios");
 const { changeSource } = require("../controllers/SourceController");
@@ -434,6 +435,10 @@ router.get("/translate",
 router.post("/update-translation",
   validators.updateTranslation,
   asyncHandler(updateTranslation)
+);
+
+router.post("/retranslate-field", 
+  asyncHandler(retranslateField)
 );
 
 router.put("/update-source", 

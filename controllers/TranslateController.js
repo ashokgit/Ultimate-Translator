@@ -1,5 +1,6 @@
 const { TranslatedPage } = require("../models/TranslatedPage");
 const PageTranslationService = require("../services/PageTranslationService");
+const TranslationGeneratorService = require("../services/TranslationGeneratorService");
 const compareService = require("../services/JsonCompareUpdateService");
 const filterTranslation = require("../services/FilterTranslationService");
 const getTranslationByUrl = require("../services/FilterByUrlService");
@@ -252,6 +253,161 @@ const translateController = {
     );
 
     res.status(200).json(response);
+  },
+
+  /**
+   * @swagger
+   * /api/v1/retranslate-field:
+   *   post:
+   *     summary: Re-translate a specific field
+   *     tags: [Translation]
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             properties:
+   *               content_id:
+   *                 type: string
+   *                 description: The unique identifier for the content.
+   *               model_name:
+   *                 type: string
+   *                 description: The name of the translation model.
+   *               language:
+   *                 type: string
+   *                 description: The language code of the translation.
+   *               field_path:
+   *                 type: string
+   *                 description: The path to the field to re-translate.
+   *               original_text:
+   *                 type: string
+   *                 description: The original text to re-translate.
+   *               customer_id:
+   *                 type: string
+   *                 description: The customer ID for translation preferences.
+   *     responses:
+   *       '200':
+   *         description: Field re-translated successfully.
+   *       '400':
+   *         description: Bad request due to invalid parameters.
+   *       '404':
+   *         description: Translation not found.
+   *       '500':
+   *         description: Internal server error.
+   */
+  retranslateField: async (req, res) => {
+    const { content_id, model_name, language, field_path, original_text, customer_id } = req.body;
+
+    // Validate required parameters
+    if (!content_id || !model_name || !language || !field_path || !original_text) {
+      throw new ValidationError("Missing required fields: content_id, model_name, language, field_path, original_text");
+    }
+
+    try {
+      // Find the existing translation document
+      const existingTranslatedPage = await TranslatedPage.findOne({
+        content_id: content_id,
+        model_name: model_name,
+      });
+
+      if (!existingTranslatedPage) {
+        throw new NotFoundError("Translation");
+      }
+
+      // Find the translation for the specified language
+      const translations = existingTranslatedPage.translations;
+      const existingTranslation = translations.find((translation) => {
+        return Object.keys(translation)[0] === language;
+      });
+
+      if (!existingTranslation) {
+        throw new NotFoundError(`Translation for language '${language}'`);
+      }
+
+      // Initialize translation generator service
+      const translationGenerator = new TranslationGeneratorService(customer_id || 'default');
+
+      // Re-translate the specific field
+      const newTranslatedText = await translationGenerator.translateValue(
+        original_text,
+        language,
+        field_path.split('.').pop(), // Use the last part as the key
+        field_path
+      );
+
+      // Update the specific field in the translation
+      const translationData = existingTranslation[language];
+      const pathParts = field_path.split('.');
+      let current = translationData;
+      
+      // Navigate to the parent object
+      for (let i = 0; i < pathParts.length - 1; i++) {
+        const part = pathParts[i];
+        if (part.includes('[') && part.includes(']')) {
+          // Handle array indices
+          const arrayName = part.split('[')[0];
+          const index = parseInt(part.split('[')[1].split(']')[0]);
+          current = current[arrayName][index];
+        } else {
+          if (!current[part]) {
+            current[part] = {};
+          }
+          current = current[part];
+        }
+      }
+
+      // Set the new translated value
+      const lastPart = pathParts[pathParts.length - 1];
+      if (lastPart.includes('[') && lastPart.includes(']')) {
+        const arrayName = lastPart.split('[')[0];
+        const index = parseInt(lastPart.split('[')[1].split(']')[0]);
+        current[arrayName][index] = newTranslatedText;
+      } else {
+        current[lastPart] = newTranslatedText;
+      }
+
+      // Save the updated translation
+      existingTranslatedPage.markModified("translations");
+      await existingTranslatedPage.save();
+
+      logger.info("Field re-translated successfully", {
+        contentId: content_id,
+        modelName: model_name,
+        language: language,
+        fieldPath: field_path,
+        originalText: original_text.substring(0, 50) + '...',
+        newTranslatedText: newTranslatedText.substring(0, 50) + '...'
+      });
+
+      const response = successResponse(
+        {
+          field_path: field_path,
+          original_text: original_text,
+          new_translated_text: newTranslatedText,
+          updated_at: new Date().toISOString()
+        },
+        "Field re-translated successfully",
+        {
+          contentId: content_id,
+          modelName: model_name,
+          language: language,
+          fieldPath: field_path
+        }
+      );
+
+      return res.status(200).json(response);
+
+    } catch (error) {
+      logger.error("Field re-translation failed", {
+        contentId: content_id,
+        modelName: model_name,
+        language: language,
+        fieldPath: field_path,
+        error: error.message
+      });
+      throw error;
+    }
   },
 };
 
