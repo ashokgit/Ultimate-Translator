@@ -183,6 +183,10 @@ We have an ambitious roadmap to evolve Easy AI Translator into an even more inte
 -   **Advanced Telemetry and Observability**: Integrate with industry-standard monitoring tools (like Prometheus, Grafana, OpenTelemetry) to provide deep insights into system performance, translation accuracy, and operational costs.
 -   **Full Production-Grade Hardening**: Implement the features mentioned in the limitations, including async job processing, advanced rate-limit management, user authentication, and detailed audit trails.
 
+## Disclaimer
+
+This project was done just for adventure and fun with vibe coding.
+
 ## Contributing
 
 1. Fork the repository
