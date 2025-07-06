@@ -159,6 +159,20 @@ Beyond simple string-for-string translation, Easy AI Translator provides an ente
 
 Easy AI Translator is not just a tool; it's a complete, reliable, and intelligent translation management platform designed for the complexities of modern applications.
 
+## Key Features (for Devs)
+
+- **JSON Structure Preservation:** Maintains the original JSON structure while translating only the relevant text fields.
+- **Batch Processing:** Efficiently processes multiple text fields in complex JSON objects in parallel.
+- **Translation Storage:** Automatically saves translations for future reference and management in the database.
+- **Real-time Processing:** Fast translation with backend progress logging; supports responsive processing (UI live feedback depends on frontend implementation).
+
+| Feature                    | Backend Supported? | Notes                                                        |
+|----------------------------|--------------------|--------------------------------------------------------------|
+| JSON Structure Preservation| ✅ Yes             | Structure is preserved, only values are translated.           |
+| Batch Processing           | ✅ Yes             | Multiple fields are processed in parallel.                    |
+| Translation Storage        | ✅ Yes             | Translations are saved for future reference.                  |
+| Real-time Processing       | ✅ Mostly          | Fast and logs progress; UI live feedback depends on frontend. | 
+
 ## Limitations & Future Roadmap
 
 To provide a clear and transparent overview, here are the current limitations and the exciting features planned for the future.
@@ -202,17 +216,3 @@ This project is licensed under the ISC License.
 ## Support
 
 For questions or issues, please review the codebase or contact the development team.
-
-## Key Features (Backend Verified)
-
-- **JSON Structure Preservation:** Maintains the original JSON structure while translating only the relevant text fields.
-- **Batch Processing:** Efficiently processes multiple text fields in complex JSON objects in parallel.
-- **Translation Storage:** Automatically saves translations for future reference and management in the database.
-- **Real-time Processing:** Fast translation with backend progress logging; supports responsive processing (UI live feedback depends on frontend implementation).
-
-| Feature                    | Backend Supported? | Notes                                                        |
-|----------------------------|--------------------|--------------------------------------------------------------|
-| JSON Structure Preservation| ✅ Yes             | Structure is preserved, only values are translated.           |
-| Batch Processing           | ✅ Yes             | Multiple fields are processed in parallel.                    |
-| Translation Storage        | ✅ Yes             | Translations are saved for future reference.                  |
-| Real-time Processing       | ✅ Mostly          | Fast and logs progress; UI live feedback depends on frontend. | 
