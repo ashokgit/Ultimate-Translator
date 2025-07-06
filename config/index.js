@@ -7,20 +7,20 @@ const config = {
 
   // Database Configuration
   database: {
-    uri: process.env.NODE_ENV === 'production' 
-      ? process.env.MONGODB_URI 
-      : (process.env.MONGODB_URI_LOCAL || process.env.MONGODB_URI || 'mongodb://localhost:27017/ultimate_translator'),
+    uri: process.env.MONGODB_URI || (process.env.NODE_ENV === 'production' 
+      ? 'mongodb://mongo:27017/ultimate_translator' 
+      : 'mongodb://localhost:27017/ultimate_translator_dev'),
   },
 
   // Translation Configuration
   translation: {
-    defaultProvider: process.env.DEFAULT_TRANSLATOR || 'huggingface',
+    defaultProvider: process.env.DEFAULT_TRANSLATOR || 'openai',
     cacheTimeout: parseInt(process.env.TRANSLATION_CACHE_TTL) || 3600,
     maxConcurrent: parseInt(process.env.MAX_CONCURRENT_TRANSLATIONS) || 10,
     requestTimeout: parseInt(process.env.REQUEST_TIMEOUT) || 30000,
   },
 
-  // OpenAI Configuration
+  // OpenAI Configuration (fallback to environment variables)
   openai: {
     apiKey: process.env.OPENAI_API_KEY,
     model: process.env.OPENAI_MODEL || 'gpt-3.5-turbo',
@@ -52,14 +52,13 @@ const config = {
     version: process.env.API_VERSION || 'v1',
     prefix: process.env.API_PREFIX || '/api',
   },
-};
 
-// Validation
-if (process.env.NODE_ENV !== 'test') {
-  if (config.translation.defaultProvider === 'openai' && !config.openai.apiKey) {
-    console.error('ERROR: OPENAI_API_KEY is required when using OpenAI as default translator');
-    process.exit(1);
-  }
-}
+  // API Key Management Configuration
+  apiKeyManagement: {
+    encryptionKey: process.env.ENCRYPTION_KEY || 'default-encryption-key-32-chars-long',
+    enableDatabaseStorage: process.env.ENABLE_API_KEY_DB_STORAGE !== 'false', // Default to true
+    fallbackToEnvVars: process.env.FALLBACK_TO_ENV_VARS !== 'false', // Default to true
+  },
+};
 
 module.exports = config; 

@@ -1,5 +1,6 @@
 const Joi = require('joi');
 const { ValidationError } = require('./errorHandler');
+const apiKeyValidations = require('../validations/apiKeyValidate');
 
 // Common validation patterns
 const commonPatterns = {
@@ -153,7 +154,17 @@ const schemas = {
 // Validation middleware factory
 const createValidator = (schema, source = 'body') => {
   return (req, res, next) => {
-    const data = source === 'query' ? req.query : req.body;
+    let data;
+    switch (source) {
+      case 'query':
+        data = req.query;
+        break;
+      case 'params':
+        data = req.params;
+        break;
+      default:
+        data = req.body;
+    }
     
     const { error, value } = schema.validate(data, {
       abortEarly: false, // Return all validation errors
@@ -177,10 +188,15 @@ const createValidator = (schema, source = 'body') => {
     }
 
     // Replace request data with validated/sanitized data
-    if (source === 'query') {
-      req.query = value;
-    } else {
-      req.body = value;
+    switch (source) {
+      case 'query':
+        req.query = value;
+        break;
+      case 'params':
+        req.params = value;
+        break;
+      default:
+        req.body = value;
     }
 
     next();
@@ -197,6 +213,13 @@ const validators = {
   translationFilter: createValidator(schemas.translationFilter, 'query'),
   availableLanguages: createValidator(schemas.availableLanguages, 'query'),
   deleteTranslation: createValidator(schemas.deleteTranslation, 'body'),
+  
+  // API Key validators
+  createApiKey: createValidator(apiKeyValidations.createApiKeySchema, 'body'),
+  updateApiKey: createValidator(apiKeyValidations.updateApiKeySchema, 'body'),
+  bulkApiKeyOperation: createValidator(apiKeyValidations.bulkOperationSchema, 'body'),
+  apiKeyQuery: createValidator(apiKeyValidations.querySchema, 'query'),
+  apiKeyId: createValidator(apiKeyValidations.idSchema, 'params'),
 };
 
 // Input sanitization helper

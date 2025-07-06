@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const path = require("path");
 const logger = require("../utils/logger");
 const { validators } = require("../utils/validation");
 const { asyncHandler } = require("../utils/errorHandler");
@@ -26,6 +27,7 @@ const {
 } = require("../controllers/TranslationUrlController");
 const sampleController = require("../controllers/SampleController");
 const translationConfigController = require("../controllers/TranslationConfigController");
+const apiKeyController = require("../controllers/ApiKeyController");
 
 // Sample Data for Ultimate Translator Showcase
 const sampleData = {
@@ -520,6 +522,88 @@ router.get("/config/translation/recommendations",
   asyncHandler(translationConfigController.getRecommendedPatterns)
 );
 
+// API Key Management Routes
+router.post("/api-keys", 
+  validators.createApiKey,
+  asyncHandler(apiKeyController.createApiKey)
+);
+
+router.get("/api-keys", 
+  validators.apiKeyQuery,
+  asyncHandler(apiKeyController.getAllApiKeys)
+);
+
+router.get("/api-keys/providers", 
+  asyncHandler(apiKeyController.getAvailableProviders)
+);
+
+router.get("/api-keys/stats", 
+  asyncHandler(apiKeyController.getApiKeyStats)
+);
+
+router.get("/api-keys/:id", 
+  validators.apiKeyId,
+  asyncHandler(apiKeyController.getApiKeyById)
+);
+
+router.put("/api-keys/:id", 
+  validators.apiKeyId,
+  validators.updateApiKey,
+  asyncHandler(apiKeyController.updateApiKey)
+);
+
+router.delete("/api-keys/:id", 
+  validators.apiKeyId,
+  asyncHandler(apiKeyController.deleteApiKey)
+);
+
+router.post("/api-keys/:id/test", 
+  validators.apiKeyId,
+  asyncHandler(apiKeyController.testApiKey)
+);
+
+router.put("/api-keys/:id/default", 
+  validators.apiKeyId,
+  asyncHandler(apiKeyController.setDefaultApiKey)
+);
+
+router.post("/api-keys/bulk", 
+  validators.bulkApiKeyOperation,
+  asyncHandler(apiKeyController.bulkOperations)
+);
+
+// Model management routes for OpenAI API keys
+router.get("/api-keys/:id/models", 
+  validators.apiKeyId,
+  asyncHandler(apiKeyController.getAvailableModels)
+);
+
+router.post("/api-keys/:id/models/refresh", 
+  validators.apiKeyId,
+  asyncHandler(apiKeyController.refreshAvailableModels)
+);
+
+// Initialize API keys from environment variables
+router.post("/api-keys/initialize-env", 
+  asyncHandler(async (req, res) => {
+    try {
+      const ApiKeyIntegrationService = require("../services/ApiKeyIntegrationService");
+      const results = await ApiKeyIntegrationService.initializeApiKeysFromEnvironment();
+      
+      const response = {
+        success: true,
+        message: "Environment API keys initialization completed",
+        data: results
+      };
+      
+      res.status(200).json(response);
+    } catch (error) {
+      logger.error("Failed to initialize API keys from environment", { error: error.message });
+      throw error;
+    }
+  })
+);
+
 router.get("/getJsonContent", 
   validators.availableLanguages, // Reuse URL validation
   asyncHandler(async (req, res) => {
@@ -650,6 +734,15 @@ router.get("/health", (req, res) => {
     service: "ultimate-translator",
     sample_data_available: Object.keys(sampleData).length
   });
+});
+
+// API Key Management UI
+router.get("/api-keys-ui", (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/api-keys.html'));
+});
+
+router.get("/api-key-management", (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/api-key-management.html'));
 });
 
 module.exports = router;
