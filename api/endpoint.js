@@ -32,6 +32,7 @@ const {
 const sampleController = require("../controllers/SampleController");
 const translationConfigController = require("../controllers/TranslationConfigController");
 const apiKeyController = require("../controllers/ApiKeyController");
+const translationRulesController = require("../controllers/TranslationRulesController");
 
 // Sample Data for Ultimate Translator Showcase
 const sampleData = {
@@ -902,6 +903,16 @@ router.post("/metrics/reset",
     
     res.status(200).json(response);
   })
+);
+
+// Translation Rules Management
+router.get(
+  "/translation-rules",
+  asyncHandler(translationRulesController.getTranslationRules)
+);
+router.put(
+  "/translation-rules",
+  asyncHandler(translationRulesController.updateTranslationRules)
 );
 
 module.exports = router;

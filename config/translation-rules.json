@@ -1,27 +1,76 @@
 {
-  "lastUpdated": "2024-01-20T10:00:00.000Z",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "Ultimate Translator - Dynamic Translation Rules Configuration",
-  
   "nonTranslatableKeys": [
-    "id", "uuid", "key", "hash", "token", "api_key", "secret",
-    "url", "uri", "link", "href", "src", "slug", "permalink", "old_urls",
-    "created_at", "updated_at", "timestamp", "date_created", "date_modified",
-    "version", "build", "revision", "commit", "checksum",
-    "lat", "lng", "latitude", "longitude", "coordinates", "location_id",
-    "timezone", "tz", "utc_offset", "locale_code", "language_code",
-    "currency_code", "country_code", "region_code", "area_code",
-    "phone", "email", "username", "user_id", "account_id", "session_id",
-    "endpoint", "method", "payload", "target_language", "model_name",
-    "content_id", "source_url", "suggested_languages", "translation_features",
-    "sample_type", "api_usage_example", "expected_response", "success",
-    "data", "metadata", "translation_time", "cached", "quality_score"
+    "id",
+    "uuid",
+    "key",
+    "hash",
+    "token",
+    "api_key",
+    "secret",
+    "url",
+    "uri",
+    "link",
+    "href",
+    "src",
+    "slug",
+    "permalink",
+    "old_urls",
+    "created_at",
+    "updated_at",
+    "timestamp",
+    "date_created",
+    "date_modified",
+    "version",
+    "build",
+    "revision",
+    "commit",
+    "checksum",
+    "lat",
+    "lng",
+    "latitude",
+    "longitude",
+    "coordinates",
+    "location_id",
+    "timezone",
+    "tz",
+    "utc_offset",
+    "locale_code",
+    "language_code",
+    "currency_code",
+    "country_code",
+    "region_code",
+    "area_code",
+    "phone",
+    "email",
+    "username",
+    "user_id",
+    "account_id",
+    "session_id",
+    "endpoint",
+    "method",
+    "payload",
+    "target_language",
+    "model_name",
+    "content_id",
+    "source_url",
+    "suggested_languages",
+    "translation_features",
+    "sample_type",
+    "api_usage_example",
+    "expected_response",
+    "success",
+    "data",
+    "metadata",
+    "translation_time",
+    "cached",
+    "quality_score"
   ],
-
   "keyPatterns": [
     "^_.*$",
     ".*_id$",
-    ".*_key$", 
+    ".*_key$",
     ".*_code$",
     ".*_token$",
     ".*_hash$",
@@ -32,7 +81,6 @@
     "^[a-f0-9-]{36}$",
     "^[a-zA-Z0-9_-]+\\.(jpg|jpeg|png|gif|pdf|doc|docx|zip)$"
   ],
-
   "valuePatterns": [
     "^https?:\\/\\/",
     "^[\\w.-]+@[\\w.-]+\\.\\w+$",
@@ -52,26 +100,60 @@
     "^< \\d+ seconds?$",
     "^[A-Za-z]+ [A-Za-z]+ \\([¥$€£₹₽]\\)$"
   ],
-
   "contentTypeRules": {
     "ecommerce": {
-      "preserveKeys": ["sku", "barcode", "gtin", "upc", "model_number", "part_number", "asin"],
-      "preservePatterns": ["^[A-Z0-9]{4,}$"]
+      "preserveKeys": [
+        "sku",
+        "barcode",
+        "gtin",
+        "upc",
+        "model_number",
+        "part_number",
+        "asin"
+      ],
+      "preservePatterns": [
+        "^[A-Z0-9]{4,}$"
+      ]
     },
     "cms": {
-      "preserveKeys": ["post_id", "category_id", "tag_id", "author_id", "template", "widget_id"],
-      "preservePatterns": ["^[a-z0-9-]+$"]
+      "preserveKeys": [
+        "post_id",
+        "category_id",
+        "tag_id",
+        "author_id",
+        "template",
+        "widget_id"
+      ],
+      "preservePatterns": [
+        "^[a-z0-9-]+$"
+      ]
     },
     "api": {
-      "preserveKeys": ["endpoint", "method", "status_code", "response_time", "request_id"],
-      "preservePatterns": ["^[A-Z_]+$"]
+      "preserveKeys": [
+        "endpoint",
+        "method",
+        "status_code",
+        "response_time",
+        "request_id"
+      ],
+      "preservePatterns": [
+        "^[A-Z_]+$"
+      ]
     },
     "saas": {
-      "preserveKeys": ["tenant_id", "workspace_id", "plan_id", "feature_flag", "api_endpoint"],
-      "preservePatterns": ["^[a-f0-9-]{36}$", "^flag_\\w+$"]
+      "preserveKeys": [
+        "tenant_id",
+        "workspace_id",
+        "plan_id",
+        "feature_flag",
+        "api_endpoint"
+      ],
+      "preservePatterns": [
+        "^[a-f0-9-]{36}$",
+        "^flag_\\w+$"
+      ]
     }
   },
-
   "autoDetection": {
     "enabled": true,
     "minFrequency": 5,
@@ -79,23 +161,23 @@
     "maxPatterns": 1000,
     "confidenceThreshold": 0.8
   },
-
   "customerOverrides": {
     "demo_customer": {
-      "nonTranslatableKeys": ["custom_field", "internal_ref"],
+      "nonTranslatableKeys": [
+        "custom_field",
+        "internal_ref"
+      ],
       "description": "Demo customer with custom fields"
     }
   },
-
   "analytics": {
     "trackPatterns": true,
     "trackFrequency": true,
     "reportingEnabled": true
   },
-
   "autoDetectedPatterns": [
     "content_id",
-    "external_id", 
+    "external_id",
     "reference_number"
   ]
-} 
+}
