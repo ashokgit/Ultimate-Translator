@@ -1,3 +1,5 @@
+![Ultimate Translator Screenshot](public/images/sc.png)
+
 # Ultimate Translator
 
 ## Overview
