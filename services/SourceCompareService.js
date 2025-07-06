@@ -69,6 +69,7 @@ class SourceCompareService {
     }
 
     const { translations } = existingTranslatedPage;
+    const updatedFields = new Set(); // Track which fields were updated
 
     for (const translation of translations) {
       const language = Object.keys(translation)[0];
@@ -86,13 +87,15 @@ class SourceCompareService {
           if (Array.isArray(newValue)) {
             // Handle array translation
             const translatedArray = await Promise.all(
-              newValue.map(async (item) => {
+              newValue.map(async (item, index) => {
                 if (typeof item === 'object' && item !== null) {
                   // For objects in arrays, translate each field
                   const translatedObj = {};
                   for (const [key, value] of Object.entries(item)) {
                     if (typeof value === 'string' || typeof value === 'number') {
                       translatedObj[key] = await this.translator.translate(String(value), language);
+                      // Track the field path for array items
+                      updatedFields.add(`${changedPath}[${index}].${key}`);
                     } else {
                       translatedObj[key] = value;
                     }
@@ -100,6 +103,7 @@ class SourceCompareService {
                   return translatedObj;
                 } else {
                   // Translate primitive values
+                  updatedFields.add(`${changedPath}[${index}]`);
                   return await this.translator.translate(String(item), language);
                 }
               })
@@ -111,6 +115,7 @@ class SourceCompareService {
             for (const [key, value] of Object.entries(newValue)) {
               if (typeof value === 'string' || typeof value === 'number') {
                 translatedObj[key] = await this.translator.translate(String(value), language);
+                updatedFields.add(`${changedPath}.${key}`);
               } else {
                 translatedObj[key] = value;
               }
@@ -122,6 +127,7 @@ class SourceCompareService {
               String(newValue),
               language
             );
+            updatedFields.add(changedPath);
             this.setValueByPath(translationData, changedPath, translatedValue);
           }
         } else {
@@ -129,10 +135,32 @@ class SourceCompareService {
           this.setValueByPath(translationData, changedPath, newValue);
         }
       }
+
+      // Reset verification status for updated fields
+      if (!existingTranslatedPage.field_approval_status) {
+        existingTranslatedPage.field_approval_status = {};
+      }
+      if (!existingTranslatedPage.field_approval_status[language]) {
+        existingTranslatedPage.field_approval_status[language] = {};
+      }
+
+      for (const fieldPath of updatedFields) {
+        existingTranslatedPage.field_approval_status[language][fieldPath] = {
+          status: 'pending',
+          reviewed_at: new Date(),
+          reviewed_by: 'system'
+        };
+      }
     }
 
     existingTranslatedPage.markModified("translations");
+    existingTranslatedPage.markModified("field_approval_status");
     await existingTranslatedPage.save();
+
+    return {
+      changedPaths: this.changedPaths,
+      updatedFields: Array.from(updatedFields)
+    };
   }
 
   setValueByPath(obj, path, value) {
