@@ -8,11 +8,11 @@ services:
     volumes:
       - ./logs:/app/logs
       - .:/app
-      - /app/node_modules
     environment:
       - NODE_ENV=development
       - MONGODB_URI=mongodb://mongo:27017/ultimate_translator_dev
       - ENCRYPTION_KEY=d7a3c3f8e5b6a8d9c0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3
+    command: sh -c "npm install --legacy-peer-deps && npm start"
     depends_on:
       - mongo
     networks:

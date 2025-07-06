@@ -4,6 +4,8 @@ const TranslationLog = require("../models/TranslationLog");
 const GoogleTranslator = require("./GoogleTranslator");
 const HuggingFaceTranslator = require("./HuggingFaceTranslator");
 const OpenAITranslator = require("./OpenAITranslator");
+const circuitBreakerManager = require("../utils/circuitBreaker");
+const performanceMonitor = require("../utils/performanceMonitor");
 
 class TextTranslator {
   constructor() {
@@ -59,17 +61,77 @@ class TextTranslator {
           cacheTime: `${cacheTime}ms`
         });
         
+        // Record cache hit
+        performanceMonitor.recordTranslation(this.translatorType, cacheTime, true);
+        
         return translationLog.translated_text;
       }
 
-      // Perform actual translation
+      // Perform actual translation with circuit breaker protection
       logger.debug("Translation not in cache, calling provider", {
         provider: this.translatorType,
         textLength: originalString.length,
         targetLanguage
       });
       
-      const translatedText = await this.translator.translate(originalString, targetLanguage);
+      // Define fallback function for circuit breaker
+      const fallbackTranslation = async () => {
+        logger.warn("Using fallback translation service", {
+          originalProvider: this.translatorType,
+          targetLanguage
+        });
+        
+        // Try alternative providers in order of preference
+        const fallbackProviders = ['google', 'openai', 'huggingface'].filter(p => p !== this.translatorType);
+        
+        for (const provider of fallbackProviders) {
+          try {
+            let fallbackTranslator;
+            switch (provider) {
+              case "google":
+                fallbackTranslator = new GoogleTranslator();
+                break;
+              case "openai":
+                fallbackTranslator = new OpenAITranslator();
+                break;
+              case "huggingface":
+                fallbackTranslator = new HuggingFaceTranslator();
+                break;
+            }
+            
+            const result = await fallbackTranslator.translate(originalString, targetLanguage);
+            logger.info("Fallback translation successful", {
+              fallbackProvider: provider,
+              originalProvider: this.translatorType
+            });
+            return result;
+          } catch (fallbackError) {
+            logger.warn("Fallback translation failed", {
+              fallbackProvider: provider,
+              error: fallbackError.message
+            });
+            continue;
+          }
+        }
+        
+        // If all fallbacks fail, return original text
+        logger.error("All translation providers failed, returning original text", {
+          originalProvider: this.translatorType,
+          fallbackProviders
+        });
+        return originalString;
+      };
+      
+      const translatedText = await circuitBreakerManager.execute(
+        `translation-${this.translatorType}`,
+        async () => await this.translator.translate(originalString, targetLanguage),
+        fallbackTranslation,
+        {
+          timeout: config.translation.requestTimeout || 30000,
+          errorThresholdPercentage: 30, // Lower threshold for translation services
+          resetTimeout: 60000 // Longer reset time for translation services
+        }
+      );
       
       // Save to cache
       const newTranslationLog = new TranslationLog({
@@ -81,6 +143,10 @@ class TextTranslator {
       await newTranslationLog.save();
       
       const totalTime = Date.now() - startTime;
+      
+      // Record translation metrics
+      performanceMonitor.recordTranslation(this.translatorType, totalTime, false);
+      
       logger.info("Translation completed and cached", {
         provider: this.translatorType,
         textLength: originalString.length,

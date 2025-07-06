@@ -4,6 +4,10 @@ const path = require("path");
 const logger = require("../utils/logger");
 const { validators } = require("../utils/validation");
 const { asyncHandler } = require("../utils/errorHandler");
+const mongoose = require("mongoose");
+const config = require("../config");
+const circuitBreakerManager = require("../utils/circuitBreaker");
+const performanceMonitor = require("../utils/performanceMonitor");
 
 //Imports from Controller
 const {
@@ -726,14 +730,93 @@ function getSampleComplexity(type) {
   return complexity[type] || 'Medium';
 }
 
-// Simple health check endpoint
-router.get("/health", (req, res) => {
-  res.status(200).json({ 
-    status: "healthy", 
-    timestamp: new Date().toISOString(),
-    service: "ultimate-translator",
-    sample_data_available: Object.keys(sampleData).length
-  });
+// Enhanced health check endpoint with comprehensive monitoring
+router.get("/health", async (req, res) => {
+  const startTime = Date.now();
+  
+  try {
+    // Check database connection
+    const dbStatus = mongoose.connection.readyState === 1 ? 'connected' : 'disconnected';
+    
+    // Check memory usage
+    const memUsage = process.memoryUsage();
+    const memUsageMB = {
+      rss: Math.round(memUsage.rss / 1024 / 1024),
+      heapTotal: Math.round(memUsage.heapTotal / 1024 / 1024),
+      heapUsed: Math.round(memUsage.heapUsed / 1024 / 1024),
+      external: Math.round(memUsage.external / 1024 / 1024)
+    };
+    
+    // Check uptime
+    const uptime = process.uptime();
+    
+    // Check translation service status
+    const translationStatus = {
+      defaultProvider: config.translation.defaultProvider,
+      cacheTimeout: config.translation.cacheTimeout,
+      maxConcurrent: config.translation.maxConcurrent
+    };
+    
+    // Get circuit breaker status
+    const circuitBreakerStatus = circuitBreakerManager.getStatus();
+    
+    // Get performance metrics
+    const performanceMetrics = performanceMonitor.getMetrics();
+    
+    // Get sample data count
+    const sampleDataCount = Object.keys(sampleData).length;
+    
+    const responseTime = Date.now() - startTime;
+    
+    const healthData = {
+      status: "healthy",
+      timestamp: new Date().toISOString(),
+      service: "ultimate-translator",
+      version: process.env.npm_package_version || "1.0.0",
+      environment: process.env.NODE_ENV || "development",
+      uptime: {
+        seconds: Math.round(uptime),
+        formatted: `${Math.floor(uptime / 3600)}h ${Math.floor((uptime % 3600) / 60)}m ${Math.floor(uptime % 60)}s`
+      },
+      database: {
+        status: dbStatus,
+        connection: mongoose.connection.host || "unknown"
+      },
+      memory: {
+        ...memUsageMB,
+        percentage: Math.round((memUsageMB.heapUsed / memUsageMB.heapTotal) * 100)
+      },
+      translation: translationStatus,
+      circuit_breakers: circuitBreakerStatus,
+      performance: {
+        ...performanceMetrics,
+        current_response_time_ms: responseTime,
+        node_version: process.version,
+        platform: process.platform
+      },
+      sample_data: {
+        available: sampleDataCount,
+        types: Object.keys(sampleData).map(key => key.replace('sample/', ''))
+      }
+    };
+    
+    // Determine overall health status
+    const isHealthy = dbStatus === 'connected' && 
+                     memUsageMB.heapUsed < memUsageMB.heapTotal * 0.9 && // Less than 90% memory usage
+                     responseTime < 1000 && // Response time under 1 second
+                     Object.values(circuitBreakerStatus).every(cb => cb.state !== 'open'); // No circuit breakers open
+    
+    res.status(isHealthy ? 200 : 503).json(healthData);
+    
+  } catch (error) {
+    logger.error("Health check failed", { error: error.message });
+    res.status(503).json({
+      status: "unhealthy",
+      timestamp: new Date().toISOString(),
+      service: "ultimate-translator",
+      error: error.message
+    });
+  }
 });
 
 // API Key Management UI
@@ -744,5 +827,81 @@ router.get("/api-keys-ui", (req, res) => {
 router.get("/api-key-management", (req, res) => {
   res.sendFile(path.join(__dirname, '../public/api-key-management.html'));
 });
+
+// Circuit Breaker Management Routes
+router.get("/circuit-breakers/status", 
+  asyncHandler(async (req, res) => {
+    const status = circuitBreakerManager.getStatus();
+    
+    const response = {
+      success: true,
+      data: status,
+      message: "Circuit breaker status retrieved successfully",
+      timestamp: new Date().toISOString()
+    };
+    
+    res.status(200).json(response);
+  })
+);
+
+router.post("/circuit-breakers/:service/reset", 
+  asyncHandler(async (req, res) => {
+    const { service } = req.params;
+    
+    circuitBreakerManager.reset(service);
+    
+    const response = {
+      success: true,
+      message: `Circuit breaker for ${service} has been reset`,
+      timestamp: new Date().toISOString()
+    };
+    
+    res.status(200).json(response);
+  })
+);
+
+router.post("/circuit-breakers/reset-all", 
+  asyncHandler(async (req, res) => {
+    circuitBreakerManager.resetAll();
+    
+    const response = {
+      success: true,
+      message: "All circuit breakers have been reset",
+      timestamp: new Date().toISOString()
+    };
+    
+    res.status(200).json(response);
+  })
+);
+
+// Performance Monitoring Routes
+router.get("/metrics", 
+  asyncHandler(async (req, res) => {
+    const metrics = performanceMonitor.getMetrics();
+    
+    const response = {
+      success: true,
+      data: metrics,
+      message: "Performance metrics retrieved successfully",
+      timestamp: new Date().toISOString()
+    };
+    
+    res.status(200).json(response);
+  })
+);
+
+router.post("/metrics/reset", 
+  asyncHandler(async (req, res) => {
+    performanceMonitor.resetMetrics();
+    
+    const response = {
+      success: true,
+      message: "Performance metrics have been reset",
+      timestamp: new Date().toISOString()
+    };
+    
+    res.status(200).json(response);
+  })
+);
 
 module.exports = router;

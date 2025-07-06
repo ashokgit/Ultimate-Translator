@@ -108,7 +108,8 @@ const translateController = {
       "Translation filter results",
       {
         filters: req.query,
-        resultCount: Array.isArray(filterResponse.data) ? filterResponse.data.length : 1
+        resultCount: Array.isArray(filterResponse.data) ? filterResponse.data.length : 1,
+        pagination: filterResponse.pagination
       }
     );
 
