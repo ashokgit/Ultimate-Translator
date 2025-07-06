@@ -3,6 +3,7 @@ const config = require("../config");
 const logger = require("../utils/logger");
 const { TranslationError } = require("../utils/errorHandler");
 const ApiKeyIntegrationService = require("../services/ApiKeyIntegrationService");
+const supportedLanguages = require("../config/languages");
 
 class OpenAITranslator {
   constructor() {
@@ -70,28 +71,30 @@ class OpenAITranslator {
       // Ensure translator is initialized
       await this.initialize();
 
+      const languageName =
+        supportedLanguages.find((lang) => lang.code === targetLanguage)?.name ||
+        targetLanguage;
+
       logger.debug("Starting OpenAI translation", {
         textLength: originalString.length,
-        targetLanguage: targetLanguage,
+        targetLanguage: languageName,
         model: this.model
       });
-
-      const prompt = `Translate the following text to ${targetLanguage}. Only return the translated text, nothing else:\n\n${originalString}`;
 
       const response = await this.openai.chat.completions.create({
         model: this.model,
         messages: [
           {
             role: "system",
-            content: "You are a professional translator. Translate the given text accurately while preserving the original meaning and tone."
+            content: `You are an expert translator. Your task is to translate the user's text into ${languageName}. Preserve the original meaning, tone, and formatting (including HTML tags, markdown, and line breaks). If you encounter any placeholders (like %s, {variable}, etc.), keep them as they are in the translated text. Translate accurately and naturally.`,
           },
           {
             role: "user",
-            content: prompt
-          }
+            content: originalString,
+          },
         ],
         max_tokens: this.maxTokens,
-        temperature: 0.3
+        temperature: 0.3,
       });
 
       const translatedText = response.choices[0].message.content.trim();
@@ -114,7 +117,7 @@ class OpenAITranslator {
         error: error.message,
         translationTime: `${translationTime}ms`,
         textLength: originalString.length,
-        targetLanguage: targetLanguage,
+        targetLanguage: languageName,
         model: this.model,
         keyUsed: this.apiKeyForLogging ? `${this.apiKeyForLogging.substring(0, 5)}...${this.apiKeyForLogging.substring(this.apiKeyForLogging.length - 4)}` : 'N/A'
       });
