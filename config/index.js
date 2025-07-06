@@ -55,7 +55,7 @@ const config = {
 
   // API Key Management Configuration
   apiKeyManagement: {
-    encryptionKey: process.env.ENCRYPTION_KEY || 'default-encryption-key-32-chars-long',
+    encryptionKey: process.env.ENCRYPTION_KEY,
     enableDatabaseStorage: process.env.ENABLE_API_KEY_DB_STORAGE !== 'false', // Default to true
     fallbackToEnvVars: process.env.FALLBACK_TO_ENV_VARS !== 'false', // Default to true
   },

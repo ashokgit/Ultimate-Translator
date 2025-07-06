@@ -10,11 +10,17 @@ COPY package*.json ./
 # Use npm install for more flexibility in dev environments
 RUN npm install --legacy-peer-deps
 
+# Create a non-root user
+RUN addgroup -g 1001 -S nodejs && adduser -S nodeuser -u 1001
+
 # Copy source code (including tests)
-COPY . .
+COPY --chown=nodeuser:nodejs . .
 
 # Create logs directory
-RUN mkdir -p logs
+RUN mkdir -p logs && chown -R nodeuser:nodejs logs
+
+# Use non-root user
+USER nodeuser
 
 # Expose port
 EXPOSE 3000

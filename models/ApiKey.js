@@ -118,10 +118,14 @@ apiKeySchema.virtual('hasQuotaRemaining').get(function() {
 apiKeySchema.pre('save', function(next) {
   if (this.isModified('encryptedKey')) {
     const algorithm = 'aes-256-cbc';
-    // Use a key from env or a default one (ensure it's 32 bytes)
-    const key = process.env.ENCRYPTION_KEY ? 
-                Buffer.from(process.env.ENCRYPTION_KEY, 'hex') : 
-                crypto.randomBytes(32);
+    
+    if (!process.env.ENCRYPTION_KEY) {
+      const err = new Error('ENCRYPTION_KEY is not set. Cannot encrypt API key.');
+      logger.error(err.message);
+      return next(err);
+    }
+    
+    const key = Buffer.from(process.env.ENCRYPTION_KEY, 'hex');
     
     // The IV should be random for each encryption
     const iv = crypto.randomBytes(16);

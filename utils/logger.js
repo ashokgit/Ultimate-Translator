@@ -45,6 +45,7 @@ const logger = winston.createLogger({
   ],
 });
 
+/*
 // Add file transport for production
 if (config.server.nodeEnv === 'production') {
   logger.add(new winston.transports.File({
@@ -60,6 +61,7 @@ if (config.server.nodeEnv === 'production') {
     handleRejections: true,
   }));
 }
+*/
 
 // Helper methods for common use cases
 logger.logRequest = (req, res, responseTime) => {
