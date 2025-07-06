@@ -21,10 +21,11 @@ const { changeSource } = require("../controllers/SourceController");
 const {
   translateString,
 } = require("../controllers/StringTranslatorController");
-const { filterList, getModelNames, deleteTranslation, getTranslationComparison, saveFieldApproval, bulkSaveFieldApprovals, getApprovalStatistics } = require("../controllers/TranslatedListController");
+const { filterList, getModelNames, deleteTranslation, getTranslationComparison, saveFieldApproval, bulkSaveFieldApprovals, getApprovalStatistics, getTranslatedList } = require("../controllers/TranslatedListController");
 const filterAndGroup = require("../services/FilterAndGroupTranslationService");
 const {
   availableLanguages,
+  getSupportedLanguages,
 } = require("../controllers/AvailableLanguageController");
 const {
   updateTranslationUrl,
@@ -936,5 +937,14 @@ router.post("/metrics/reset",
     res.status(200).json(response);
   })
 );
+
+router.get(
+  "/get-available-language",
+  validators.availableLanguages,
+  asyncHandler(availableLanguages)
+);
+router.get("/supported-languages", asyncHandler(getSupportedLanguages));
+
+router.get("/translation-filter", asyncHandler(getTranslatedList));
 
 module.exports = router;

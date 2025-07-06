@@ -27,6 +27,8 @@ const sourceController = {
    *                 type: string
    *               model_name:
    *                 type: string
+   *               customer_id:
+   *                 type: string
    *     responses:
    *       '200':
    *         description: Source data updated successfully.
@@ -35,7 +37,7 @@ const sourceController = {
    */
   changeSource: async (req, res) => {
     try {
-      const { updatedJson, content_id, model_name } = req.body;
+      const { updatedJson, content_id, model_name, customer_id } = req.body;
 
       // Find the existing TranslatedPage
       const existingTranslatedPage = await TranslatedPage.findOne({
@@ -53,7 +55,11 @@ const sourceController = {
       const sourceData = existingTranslatedPage.source_data;
 
       // Create an instance of SourceComparer
-      const sourceComparer = new SourceCompareService(content_id, model_name);
+      const sourceComparer = new SourceCompareService(
+        content_id,
+        model_name,
+        customer_id
+      );
 
       // Compare and update the translations
       const parsedUpdatedJson = JSON.parse(updatedJson);

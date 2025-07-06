@@ -60,18 +60,7 @@
           <label for="language" class="form-label">Target Language</label>
           <select id="language" class="form-select" required>
             <option value="">Select target language</option>
-            <option value="en">English</option>
-            <option value="es" selected>Spanish (Español)</option>
-            <option value="fr">French (Français)</option>
-            <option value="de">German (Deutsch)</option>
-            <option value="it">Italian (Italiano)</option>
-            <option value="pt">Portuguese (Português)</option>
-            <option value="ru">Russian (Русский)</option>
-            <option value="ja">Japanese (日本語)</option>
-            <option value="ko">Korean (한국어)</option>
-            <option value="zh">Chinese (中文)</option>
-            <option value="ar">Arabic (العربية)</option>
-            <option value="hi">Hindi (हिन्दी)</option>
+            <!-- Languages will be dynamically populated here -->
           </select>
           <small style="color: var(--gray-500); font-size: 0.875rem;">
             The language you want to translate the content into
@@ -242,6 +231,29 @@
   </div>
 
   <!-- JavaScript -->
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      // Fetch and populate supported languages
+      const languageSelect = document.getElementById("language");
+      fetch("/api/v1/supported-languages")
+        .then((response) => response.json())
+        .then((languages) => {
+          languages.forEach((lang) => {
+            const option = document.createElement("option");
+            option.value = lang.code;
+            option.textContent = `${lang.name} (${lang.code})`;
+            languageSelect.appendChild(option);
+          });
+           // Set a default value if desired
+          if (languageSelect.options.length > 1) {
+            languageSelect.value = "es"; 
+          }
+        })
+        .catch((error) =>
+          console.error("Error fetching supported languages:", error)
+        );
+    });
+  </script>
   <script src="js/interceptor.js"></script>
 </body>
 </html>
