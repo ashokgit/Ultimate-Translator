@@ -106,7 +106,7 @@ class SourceCompareService {
   async compareAndUpdate(sourceData, updatedJson) {
     this.sourceObj = sourceData;
     this.compare(sourceData, updatedJson);
-    this.updateTranslations();
+    await this.updateTranslations();
     console.log("Changed Paths:");
     console.log(this.changedPaths);
     return this.changedPaths;

@@ -56,8 +56,11 @@ const sourceController = {
       const sourceComparer = new SourceCompareService(content_id, model_name);
 
       // Compare and update the translations
-      parsedUpdatedjSON = JSON.parse(updatedJson);
-      sourceComparer.compareAndUpdate(sourceData, parsedUpdatedjSON);
+      const parsedUpdatedJson = JSON.parse(updatedJson);
+      await sourceComparer.compareAndUpdate(sourceData, parsedUpdatedJson);
+      
+      // Update the source_data with the new content
+      existingTranslatedPage.source_data = parsedUpdatedJson;
 
       // Save the updated TranslatedPage
       await existingTranslatedPage.save();

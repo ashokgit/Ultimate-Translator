@@ -1,9 +1,9 @@
 const { expect } = require("chai");
 const sinon = require("sinon");
-const TranslatedPage = require("../models/TranslatedPage");
+const { TranslatedPage } = require("../models/TranslatedPage");
 const SourceCompareService = require("../services/SourceCompareService");
 const { validateSourceChange } = require("../validations/changeSourceValidate");
-const { changeSource } = require("../controllers/SourceController");
+const sourceController = require("../controllers/SourceController");
 
 describe("update-source Endpoint", () => {
   describe("Validation Middleware", () => {
@@ -80,7 +80,7 @@ describe("update-source Endpoint", () => {
         "compareAndUpdate"
       );
 
-      await changeSource(req, res);
+      await sourceController.changeSource(req, res);
 
       expect(compareAndUpdateStub.calledOnce).to.be.true;
       expect(existingTranslatedPage.save.calledOnce).to.be.true;
@@ -109,7 +109,7 @@ describe("update-source Endpoint", () => {
 
       sinon.stub(TranslatedPage, "findOne").returns(null);
 
-      await changeSource(req, res);
+      await sourceController.changeSource(req, res);
 
       expect(res.status.calledWith(404)).to.be.true;
       expect(
@@ -133,7 +133,7 @@ describe("update-source Endpoint", () => {
 
       sinon.stub(TranslatedPage, "findOne").throws(new Error("Database error"));
 
-      await changeSource(req, res);
+      await sourceController.changeSource(req, res);
 
       expect(res.status.calledWith(500)).to.be.true;
       expect(
