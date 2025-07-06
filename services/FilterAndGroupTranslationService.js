@@ -2,7 +2,7 @@ const { TranslatedPage } = require("../models/TranslatedPage");
 
 async function filterAndGroup(req) {
   try {
-    const { model_name, content_id } = req.query;
+    const { model_name, content_id, language } = req.query;
 
     // Define the filter object based on the provided parameters
     const filter = {};
@@ -27,26 +27,40 @@ async function filterAndGroup(req) {
           groups[model] = [];
         }
 
-        const translations = translation.translations.map((trans) => {
-          const language = Object.keys(trans)[0];
-          const data = trans[language];
+        // Filter translations by language if specified
+        let filteredTranslations = translation.translations;
+        if (language) {
+          filteredTranslations = translation.translations.filter((trans) => {
+            const lang = Object.keys(trans)[0];
+            return lang === language;
+          });
+        }
+
+        const translations = filteredTranslations.map((trans) => {
+          const lang = Object.keys(trans)[0];
+          const data = trans[lang];
           const pendingCount = calculatePendingCount(data);
 
           return {
-            [language]: {
+            [lang]: {
               ...(data || {}),
               pending_count: pendingCount,
             },
           };
         });
 
-        groups[model].push({
-          _id: translation._id,
-          model_name: translation.model_name,
-          content_id: translation.content_id,
-          source_url: translation.source_url,
-          translations,
-        });
+        // Only add if there are translations (after filtering)
+        if (translations.length > 0) {
+          groups[model].push({
+            _id: translation._id,
+            model_name: translation.model_name,
+            content_id: translation.content_id,
+            source_url: translation.source_url,
+            translations,
+            createdAt: translation.createdAt,
+            updatedAt: translation.updatedAt,
+          });
+        }
 
         return groups;
       },

@@ -136,8 +136,8 @@ async function loadTranslations() {
                 source_url: translationDoc.source_url,
                 language: language,
                 translation_data: translation[language],
-                created_at: translationDoc.created_at,
-                updated_at: translationDoc.updated_at
+                created_at: translationDoc.createdAt,
+                updated_at: translationDoc.updatedAt
               });
             });
           });
