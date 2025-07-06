@@ -1,6 +1,6 @@
 const { TranslatedPage } = require("../models/TranslatedPage");
 const TextTranslator = require("../translators/TextTranslator");
-const getTranslationConfig = require("../services/TranslationConfigService");
+const TranslationConfigService = require("../services/TranslationConfigService");
 
 class SourceCompareService {
   constructor(contentId, modelName, customerId = "default") {
@@ -10,7 +10,7 @@ class SourceCompareService {
     this.changedPaths = {};
     this.sourceObj = null;
     this.translator = new TextTranslator(modelName, customerId);
-    this.configService = getTranslationConfig();
+    this.configService = new TranslationConfigService();
   }
 
   compare(sourceObj, updatedObj, currentPath = "") {
@@ -21,17 +21,34 @@ class SourceCompareService {
       const sourceValue = sourceObj ? sourceObj[key] : undefined;
       const currentKeyPath = currentPath ? `${currentPath}.${key}` : key;
 
-      if (
+      if (Array.isArray(updatedValue)) {
+        // For arrays, compare each element
+        if (!Array.isArray(sourceValue) || 
+            JSON.stringify(updatedValue) !== JSON.stringify(sourceValue)) {
+          // If array content is different, mark entire array for translation
+          this.changedPaths[currentKeyPath] = updatedValue;
+          
+          // Also compare objects within the array
+          updatedValue.forEach((item, index) => {
+            if (typeof item === 'object' && item !== null) {
+              const arrayItemPath = `${currentKeyPath}[${index}]`;
+              const sourceItem = Array.isArray(sourceValue) ? sourceValue[index] : undefined;
+              this.compare(sourceItem, item, arrayItemPath);
+            }
+          });
+        }
+      } else if (
         typeof updatedValue === "object" &&
-        updatedValue !== null &&
-        !Array.isArray(updatedValue)
+        updatedValue !== null
       ) {
+        // For objects, recursively compare
         this.compare(
-          sourceValue,
+          sourceValue || {},
           updatedValue,
           currentKeyPath
         );
       } else if (updatedValue !== sourceValue) {
+        // For primitive values, mark for translation if different
         this.changedPaths[currentKeyPath] = updatedValue;
       }
     }
@@ -59,20 +76,56 @@ class SourceCompareService {
 
       for (const changedPath in this.changedPaths) {
         const newValue = this.changedPaths[changedPath];
-
         const shouldTranslate = await this.configService.shouldTranslateKey(
-          changedPath,
+          changedPath.split('.').pop().replace(/\[\d+\]$/, ''), // Get the actual key name
           newValue,
           this.customerId
         );
 
         if (shouldTranslate) {
-          const translatedValue = await this.translator.translate(
-            String(newValue),
-            language
-          );
-          this.setValueByPath(translationData, changedPath, translatedValue);
+          if (Array.isArray(newValue)) {
+            // Handle array translation
+            const translatedArray = await Promise.all(
+              newValue.map(async (item) => {
+                if (typeof item === 'object' && item !== null) {
+                  // For objects in arrays, translate each field
+                  const translatedObj = {};
+                  for (const [key, value] of Object.entries(item)) {
+                    if (typeof value === 'string' || typeof value === 'number') {
+                      translatedObj[key] = await this.translator.translate(String(value), language);
+                    } else {
+                      translatedObj[key] = value;
+                    }
+                  }
+                  return translatedObj;
+                } else {
+                  // Translate primitive values
+                  return await this.translator.translate(String(item), language);
+                }
+              })
+            );
+            this.setValueByPath(translationData, changedPath, translatedArray);
+          } else if (typeof newValue === 'object' && newValue !== null) {
+            // For objects, translate each field
+            const translatedObj = {};
+            for (const [key, value] of Object.entries(newValue)) {
+              if (typeof value === 'string' || typeof value === 'number') {
+                translatedObj[key] = await this.translator.translate(String(value), language);
+              } else {
+                translatedObj[key] = value;
+              }
+            }
+            this.setValueByPath(translationData, changedPath, translatedObj);
+          } else {
+            // For primitive values, translate directly
+            const translatedValue = await this.translator.translate(
+              String(newValue),
+              language
+            );
+            this.setValueByPath(translationData, changedPath, translatedValue);
+          }
         } else {
+          // If not translatable, preserve the original value
           this.setValueByPath(translationData, changedPath, newValue);
         }
       }
@@ -95,12 +148,20 @@ class SourceCompareService {
   }
 
   async compareAndUpdate(sourceData, updatedJson) {
-    this.sourceObj = sourceData;
-    this.compare(sourceData, updatedJson);
-    await this.updateTranslations();
-    console.log("Changed Paths:");
-    console.log(this.changedPaths);
-    return this.changedPaths;
+    try {
+      // Initialize the config service
+      await this.configService.initialize();
+      
+      this.sourceObj = sourceData;
+      this.compare(sourceData, updatedJson);
+      await this.updateTranslations();
+      
+      console.log("Changed Paths:", this.changedPaths);
+      return this.changedPaths;
+    } catch (error) {
+      console.error("Error in compareAndUpdate:", error);
+      throw error; // Re-throw to be handled by the controller
+    }
   }
 }
 

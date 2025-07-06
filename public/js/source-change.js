@@ -160,8 +160,9 @@ class SourceContentManager {
     }
 
     // Validate JSON format
+    let parsedJson;
     try {
-      JSON.parse(sourceData);
+      parsedJson = JSON.parse(sourceData);
     } catch (e) {
       this.showError("Invalid JSON format. Please check your source content.");
       this.sourceContent.focus();
@@ -173,16 +174,23 @@ class SourceContentManager {
     this.hideError();
 
     try {
-      const response = await this.updateSource(formData, sourceData);
-      this.showSuccess("Source content updated successfully!");
-      this.updateInfoPanel(formData, sourceData);
+      const response = await this.updateSource(formData, parsedJson);
       
-      // Refresh the source to show updated content
-      setTimeout(() => {
-        this.handleFetch();
-      }, 1000);
+      if (response.success) {
+        this.showSuccess("Source content updated successfully! The changes will be reflected in translations.");
+        this.updateInfoPanel(formData, sourceData);
+        
+        // Refresh the source to show updated content
+        setTimeout(() => {
+          this.handleFetch();
+        }, 1000);
+      } else {
+        throw new Error(response.error || "Failed to update source content");
+      }
     } catch (error) {
-      this.showError(this.getErrorMessage(error, 'update'));
+      const errorMessage = error.responseJSON?.error || error.message || this.getErrorMessage(error, 'update');
+      this.showError(`Update failed: ${errorMessage}`);
+      console.error("Update error:", error);
     } finally {
       this.setUpdateLoadingState(false);
     }
@@ -228,17 +236,34 @@ class SourceContentManager {
   }
 
   async updateSource(formData, sourceData) {
+    // Ensure sourceData is valid JSON
+    let parsedSourceData;
+    try {
+      // If sourceData is a string, parse it to ensure it's valid JSON
+      parsedSourceData = typeof sourceData === 'string' ? JSON.parse(sourceData) : sourceData;
+    } catch (e) {
+      throw new Error("Invalid JSON format in source data");
+    }
+
     const response = await $.ajax({
       url: "/api/v1/update-source",
       method: "PUT",
-      data: {
+      contentType: "application/json",
+      data: JSON.stringify({
         content_id: formData.content_id,
         model_name: formData.model_name,
-        updatedJson: sourceData
-      },
+        updatedJson: JSON.stringify(parsedSourceData) // Ensure it's a JSON string
+      }),
       dataType: "json",
       timeout: 30000
     });
+
+    // If successful, update the UI to reflect changes
+    if (response.success) {
+      this.originalSource = JSON.stringify(parsedSourceData, null, 2);
+      this.updateInfoPanel(formData, this.originalSource);
+      this.updateCharCount();
+    }
 
     return response;
   }
@@ -250,6 +275,9 @@ class SourceContentManager {
       sourceData = response.source_data;
     } else if (response.data && response.data.source_data) {
       sourceData = response.data.source_data;
+    } else if (response.data && Array.isArray(response.data) && response.data.length > 0 && response.data[0].source_data) {
+      // Handle array of results from API
+      sourceData = response.data[0].source_data;
     } else if (response.source) {
       sourceData = response.source;
     } else {

@@ -292,71 +292,64 @@ class TranslationConfigService {
    * Check if a key should be translated
    */
   async shouldTranslateKey(key, value, customerId = 'default') {
-    try {
-      const config = await this.getConfig(customerId);
-      
-      if (!config) {
-        logger.warn("No configuration found, using default behavior", { customerId });
-        return true;
-      }
-      
-      // Check explicit key exclusions
-      if (config.nonTranslatableKeys && config.nonTranslatableKeys.includes(key.toLowerCase())) {
-        this.recordPattern(key, 'key_exclusion', customerId);
-        return false;
-      }
+    if (!this.initialized) {
+      await this.initialize();
+    }
 
-      // Check key patterns
-      if (config.keyPatterns && Array.isArray(config.keyPatterns)) {
-        for (const pattern of config.keyPatterns) {
-          try {
-            if (pattern && typeof pattern.test === 'function' && pattern.test(key)) {
-              this.recordPattern(key, 'key_pattern', customerId);
-              return false;
-            }
-          } catch (error) {
-            logger.error("Error testing key pattern", { 
-              pattern: pattern?.source || pattern, 
-              key, 
-              customerId, 
-              error: error.message 
-            });
-          }
-        }
-      }
+    const config = await this.getConfig(customerId);
 
-      // Check value patterns if value is provided
-      if (value && typeof value === 'string' && config.valuePatterns && Array.isArray(config.valuePatterns)) {
-        for (const pattern of config.valuePatterns) {
-          try {
-            if (pattern && typeof pattern.test === 'function' && pattern.test(value)) {
-              this.recordPattern(key, 'value_pattern', customerId);
-              return false;
-            }
-          } catch (error) {
-            logger.error("Error testing value pattern", { 
-              pattern: pattern?.source || pattern, 
-              value: value.substring(0, 50), 
-              key, 
-              customerId, 
-              error: error.message 
-            });
-          }
-        }
-      }
-
-      // Check auto-detected patterns
-      if (this.autoDetectedPatterns.has(key.toLowerCase())) {
-        this.recordPattern(key, 'auto_detected', customerId);
-        return false;
-      }
-
-      return true;
-    } catch (error) {
-      logger.error("Error in shouldTranslateKey", { key, customerId, error: error.message });
-      // Fallback to safe behavior - don't translate if there's an error
+    // Check if key is in non-translatable list
+    if (config.nonTranslatableKeys.includes(key)) {
       return false;
     }
+
+    // Handle arrays - check if the array itself should be translated
+    if (Array.isArray(value)) {
+      // If the key matches any non-translatable patterns, don't translate the array
+      for (const pattern of config.keyPatterns) {
+        if (pattern.test(key)) {
+          return false;
+        }
+      }
+      // Arrays should be translated element by element
+      return true;
+    }
+
+    // For non-array values, check key patterns
+    for (const pattern of config.keyPatterns) {
+      if (pattern.test(key)) {
+        return false;
+      }
+    }
+
+    // If value is not a string or number, don't translate
+    if (typeof value !== 'string' && typeof value !== 'number') {
+      return false;
+    }
+
+    // Check value patterns
+    const stringValue = String(value);
+    for (const pattern of config.valuePatterns) {
+      if (pattern.test(stringValue)) {
+        return false;
+      }
+    }
+
+    // Check content type specific rules
+    for (const [contentType, rules] of Object.entries(config.contentTypeRules)) {
+      if (rules.preserveKeys && rules.preserveKeys.includes(key)) {
+        return false;
+      }
+      if (rules.preservePatterns) {
+        for (const pattern of rules.preservePatterns) {
+          if (pattern.test(stringValue)) {
+            return false;
+          }
+        }
+      }
+    }
+
+    return true;
   }
 
   /**
