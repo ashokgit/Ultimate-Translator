@@ -107,7 +107,7 @@ Here's an example of how the translator handles complex JSON, preserving the str
 **Source Language (English):**
 ![Source JSON Example](public/images/source-language-json-example.png)
 
-**Translated to Destination Language (e.g., Spanish):**
+**Translated to Destination Language (e.g., hindi):**
 ![Destination JSON Example](public/images/destination-language-json-example.png)
 
 #### 3. Manage and Scale with Confidence
@@ -169,6 +169,7 @@ While the core translation engine is powerful and reliable, it has been tested p
 
 -   **Scalability for Massive Jobs**: The current architecture processes requests synchronously. Translating millions of records would require implementing a robust asynchronous task management system (e.g., using a job queue like BullMQ with Redis) to handle long-running background jobs gracefully.
 -   **API Rate Limit Handling**: While the service includes basic rate limiting, it does not yet have sophisticated logic to dynamically manage the specific rate limits imposed by external providers like OpenAI or Google Translate.
+-   **Hardcoded Source Language**: The application currently assumes the source language is English for all translations. Support for dynamic source language detection or selection is planned for a future release.
 -   **Security**: The application currently lacks a dedicated user authentication and authorization layer. Access is open on the network where it is deployed.
 -   **Auditability**: Comprehensive audit logs to track translation history, API key usage, and configuration changes are not yet implemented.
 
