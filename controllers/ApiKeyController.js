@@ -2,9 +2,35 @@ const ApiKeyService = require("../services/ApiKeyService");
 const logger = require("../utils/logger");
 const { successResponse } = require("../utils/errorHandler");
 
+/**
+ * @swagger
+ * tags:
+ *   name: API Key Management
+ *   description: Endpoints for managing API keys for translation providers.
+ */
 const apiKeyController = {
   /**
-   * Create a new API key
+   * @swagger
+   * /api/v1/api-keys:
+   *   post:
+   *     summary: Create a new API key
+   *     tags: [API Key Management]
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             properties:
+   *               provider:
+   *                 type: string
+   *               apiKey:
+   *                 type: string
+   *     responses:
+   *       '201':
+   *         description: API key created successfully.
+   *       '400':
+   *         description: Bad request.
    */
   createApiKey: async (req, res) => {
     try {
@@ -26,7 +52,20 @@ const apiKeyController = {
   },
 
   /**
-   * Get all API keys
+   * @swagger
+   * /api/v1/api-keys:
+   *   get:
+   *     summary: Get all API keys
+   *     tags: [API Key Management]
+   *     parameters:
+   *       - in: query
+   *         name: provider
+   *         schema:
+   *           type: string
+   *         description: Filter by provider (e.g., openai, google).
+   *     responses:
+   *       '200':
+   *         description: A list of API keys.
    */
   getAllApiKeys: async (req, res) => {
     try {
@@ -50,7 +89,23 @@ const apiKeyController = {
   },
 
   /**
-   * Get a specific API key by ID
+   * @swagger
+   * /api/v1/api-keys/{id}:
+   *   get:
+   *     summary: Get a specific API key by ID
+   *     tags: [API Key Management]
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: string
+   *         description: The ID of the API key.
+   *     responses:
+   *       '200':
+   *         description: The requested API key.
+   *       '404':
+   *         description: API key not found.
    */
   getApiKeyById: async (req, res) => {
     try {
@@ -73,7 +128,31 @@ const apiKeyController = {
   },
 
   /**
-   * Update an API key
+   * @swagger
+   * /api/v1/api-keys/{id}:
+   *   put:
+   *     summary: Update an API key
+   *     tags: [API Key Management]
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: string
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             properties:
+   *               apiKey:
+   *                 type: string
+   *     responses:
+   *       '200':
+   *         description: API key updated successfully.
+   *       '404':
+   *         description: API key not found.
    */
   updateApiKey: async (req, res) => {
     try {
@@ -97,7 +176,22 @@ const apiKeyController = {
   },
 
   /**
-   * Delete an API key
+   * @swagger
+   * /api/v1/api-keys/{id}:
+   *   delete:
+   *     summary: Delete an API key
+   *     tags: [API Key Management]
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: string
+   *     responses:
+   *       '200':
+   *         description: API key deleted successfully.
+   *       '404':
+   *         description: API key not found.
    */
   deleteApiKey: async (req, res) => {
     try {
@@ -120,7 +214,22 @@ const apiKeyController = {
   },
 
   /**
-   * Test an API key
+   * @swagger
+   * /api/v1/api-keys/{id}/test:
+   *   post:
+   *     summary: Test an API key
+   *     tags: [API Key Management]
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: string
+   *     responses:
+   *       '200':
+   *         description: API key test result.
+   *       '404':
+   *         description: API key not found.
    */
   testApiKey: async (req, res) => {
     try {
@@ -143,7 +252,22 @@ const apiKeyController = {
   },
 
   /**
-   * Set default API key for a provider
+   * @swagger
+   * /api/v1/api-keys/{id}/default:
+   *   put:
+   *     summary: Set default API key for a provider
+   *     tags: [API Key Management]
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: string
+   *     responses:
+   *       '200':
+   *         description: Default API key set successfully.
+   *       '404':
+   *         description: API key not found.
    */
   setDefaultApiKey: async (req, res) => {
     try {
@@ -166,7 +290,14 @@ const apiKeyController = {
   },
 
   /**
-   * Get API key statistics
+   * @swagger
+   * /api/v1/api-keys/stats:
+   *   get:
+   *     summary: Get API key statistics
+   *     tags: [API Key Management]
+   *     responses:
+   *       '200':
+   *         description: A summary of API key statistics.
    */
   getApiKeyStats: async (req, res) => {
     try {
@@ -187,7 +318,14 @@ const apiKeyController = {
   },
 
   /**
-   * Get available providers
+   * @swagger
+   * /api/v1/api-keys/providers:
+   *   get:
+   *     summary: Get available providers
+   *     tags: [API Key Management]
+   *     responses:
+   *       '200':
+   *         description: A list of available translation providers.
    */
   getAvailableProviders: async (req, res) => {
     try {
@@ -243,7 +381,22 @@ const apiKeyController = {
   },
 
   /**
-   * Get available OpenAI models for an API key
+   * @swagger
+   * /api/v1/api-keys/{id}/models:
+   *   get:
+   *     summary: Get available OpenAI models for an API key
+   *     tags: [API Key Management]
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: string
+   *     responses:
+   *       '200':
+   *         description: A list of available models.
+   *       '404':
+   *         description: API key not found.
    */
   getAvailableModels: async (req, res) => {
     try {
@@ -266,7 +419,22 @@ const apiKeyController = {
   },
 
   /**
-   * Refresh available models for an API key
+   * @swagger
+   * /api/v1/api-keys/{id}/models/refresh:
+   *   post:
+   *     summary: Refresh the list of available OpenAI models for an API key
+   *     tags: [API Key Management]
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: string
+   *     responses:
+   *       '200':
+   *         description: Model list refreshed successfully.
+   *       '404':
+   *         description: API key not found.
    */
   refreshAvailableModels: async (req, res) => {
     try {
@@ -289,7 +457,27 @@ const apiKeyController = {
   },
 
   /**
-   * Bulk operations on API keys
+   * @swagger
+   * /api/v1/api-keys/bulk:
+   *   post:
+   *     summary: Perform bulk operations on API keys
+   *     tags: [API Key Management]
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             properties:
+   *               operation:
+   *                 type: string
+   *               ids:
+   *                 type: array
+   *                 items:
+   *                   type: string
+   *     responses:
+   *       '200':
+   *         description: Bulk operation completed successfully.
    */
   bulkOperations: async (req, res) => {
     try {
@@ -354,6 +542,24 @@ const apiKeyController = {
         body: req.body
       });
       throw error;
+    }
+  },
+
+  /**
+   * @swagger
+   * /api/v1/api-keys/initialize-env:
+   *   post:
+   *     summary: Initialize API keys from environment variables
+   *     tags: [API Key Management]
+   *     responses:
+   *       '200':
+   *         description: API keys initialized successfully.
+   */
+  initializeFromEnv: async (req, res) => {
+    try {
+      // ... existing code ...
+    } catch (error) {
+      // ... existing code ...
     }
   }
 };

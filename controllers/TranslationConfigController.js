@@ -2,9 +2,28 @@ const { initializeConfig, getConfig, addCustomRule, getConfigAnalytics, configSe
 const logger = require("../utils/logger");
 const { successResponse, ValidationError, NotFoundError } = require("../utils/errorHandler");
 
+/**
+ * @swagger
+ * tags:
+ *   name: Translation Configuration
+ *   description: Endpoints for managing translation configurations and rules.
+ */
 const translationConfigController = {
   /**
-   * Get current translation configuration for a customer
+   * @swagger
+   * /api/v1/config/translation:
+   *   get:
+   *     summary: Get current translation configuration
+   *     tags: [Translation Configuration]
+   *     parameters:
+   *       - in: query
+   *         name: customer_id
+   *         schema:
+   *           type: string
+   *         description: The ID of the customer.
+   *     responses:
+   *       '200':
+   *         description: The current translation configuration.
    */
   getConfiguration: async (req, res) => {
     const { customer_id = 'default' } = req.query;
@@ -39,7 +58,27 @@ const translationConfigController = {
   },
 
   /**
-   * Add a custom translation rule for a customer
+   * @swagger
+   * /api/v1/config/translation/rules:
+   *   post:
+   *     summary: Add a custom translation rule
+   *     tags: [Translation Configuration]
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             properties:
+   *               customer_id:
+   *                 type: string
+   *               rule_type:
+   *                 type: string
+   *               pattern:
+   *                 type: string
+   *     responses:
+   *       '201':
+   *         description: Custom rule added successfully.
    */
   addRule: async (req, res) => {
     const { customer_id, rule_type, pattern, description } = req.body;
@@ -90,7 +129,20 @@ const translationConfigController = {
   },
 
   /**
-   * Get analytics for translation patterns
+   * @swagger
+   * /api/v1/config/translation/analytics:
+   *   get:
+   *     summary: Get analytics for translation patterns
+   *     tags: [Translation Configuration]
+   *     parameters:
+   *       - in: query
+   *         name: customer_id
+   *         schema:
+   *           type: string
+   *         description: The ID of the customer.
+   *     responses:
+   *       '200':
+   *         description: A summary of translation pattern analytics.
    */
   getAnalytics: async (req, res) => {
     const { customer_id = 'default' } = req.query;
@@ -115,7 +167,25 @@ const translationConfigController = {
   },
 
   /**
-   * Test translation rules against sample data
+   * @swagger
+   * /api/v1/config/translation/test:
+   *   post:
+   *     summary: Test translation rules against sample data
+   *     tags: [Translation Configuration]
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             properties:
+   *               customer_id:
+   *                 type: string
+   *               test_data:
+   *                 type: object
+   *     responses:
+   *       '200':
+   *         description: The results of the rule test.
    */
   testRules: async (req, res) => {
     const { customer_id = 'default', test_data } = req.body;
@@ -175,7 +245,19 @@ const translationConfigController = {
   },
 
   /**
-   * Get auto-detected patterns
+   * @swagger
+   * /api/v1/config/translation/patterns:
+   *   get:
+   *     summary: Get auto-detected patterns
+   *     tags: [Translation Configuration]
+   *     parameters:
+   *       - in: query
+   *         name: customer_id
+   *         schema:
+   *           type: string
+   *     responses:
+   *       '200':
+   *         description: A list of auto-detected patterns.
    */
   getAutoDetectedPatterns: async (req, res) => {
     const { customer_id = 'default' } = req.query;
@@ -212,7 +294,25 @@ const translationConfigController = {
   },
 
   /**
-   * Update auto-detection settings
+   * @swagger
+   * /api/v1/config/translation/auto-detection:
+   *   put:
+   *     summary: Update auto-detection settings
+   *     tags: [Translation Configuration]
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             properties:
+   *               customer_id:
+   *                 type: string
+   *               settings:
+   *                 type: object
+   *     responses:
+   *       '200':
+   *         description: Auto-detection settings updated successfully.
    */
   updateAutoDetectionSettings: async (req, res) => {
     const { customer_id, settings } = req.body;
@@ -255,7 +355,19 @@ const translationConfigController = {
   },
 
   /**
-   * Get recommended patterns based on common industry practices
+   * @swagger
+   * /api/v1/config/translation/recommendations:
+   *   get:
+   *     summary: Get recommended patterns for exclusion
+   *     tags: [Translation Configuration]
+   *     parameters:
+   *       - in: query
+   *         name: customer_id
+   *         schema:
+   *           type: string
+   *     responses:
+   *       '200':
+   *         description: A list of recommended patterns.
    */
   getRecommendedPatterns: async (req, res) => {
     const { industry, content_type } = req.query;

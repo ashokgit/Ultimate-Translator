@@ -1,10 +1,21 @@
 const TranslationRulesService = require('../services/TranslationRulesService');
 
+/**
+ * @swagger
+ * tags:
+ *   name: Translation Rules
+ *   description: Endpoints for managing translation rules.
+ */
 class TranslationRulesController {
   /**
-   * @description Handles fetching the translation rules.
-   * @param {Object} req - Express request object.
-   * @param {Object} res - Express response object.
+   * @swagger
+   * /api/v1/translation-rules:
+   *   get:
+   *     summary: Get the current translation rules
+   *     tags: [Translation Rules]
+   *     responses:
+   *       '200':
+   *         description: The current translation rules.
    */
   static async getTranslationRules(req, res) {
     try {
@@ -16,9 +27,20 @@ class TranslationRulesController {
   }
 
   /**
-   * @description Handles updating the translation rules.
-   * @param {Object} req - Express request object.
-   * @param {Object} res - Express response object.
+   * @swagger
+   * /api/v1/translation-rules:
+   *   put:
+   *     summary: Update the translation rules
+   *     tags: [Translation Rules]
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *     responses:
+   *       '200':
+   *         description: Translation rules updated successfully.
    */
   static async updateTranslationRules(req, res) {
     try {

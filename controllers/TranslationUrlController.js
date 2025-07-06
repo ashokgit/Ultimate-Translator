@@ -1,6 +1,39 @@
 const TranslationUrlService = require("../services/TranslationUrlService");
 
+/**
+ * @swagger
+ * tags:
+ *   name: Translation URL Management
+ *   description: Endpoints for managing translation URLs.
+ */
 const TranslationUrlController = {
+  /**
+   * @swagger
+   * /api/v1/update-translation-url:
+   *   put:
+   *     summary: Update the URL for a specific translation
+   *     tags: [Translation URL Management]
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             properties:
+   *               content_id:
+   *                 type: string
+   *               model_name:
+   *                 type: string
+   *               language:
+   *                 type: string
+   *               new_url:
+   *                 type: string
+   *     responses:
+   *       '200':
+   *         description: Translation URL updated successfully.
+   *       '404':
+   *         description: Translation not found.
+   */
   updateTranslationUrl: async (req, res) => {
     try {
       const { content_id, model_name, language, new_url } = req.body;

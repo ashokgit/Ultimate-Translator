@@ -627,6 +627,24 @@ router.get("/getJsonContent",
   })
 );
 
+/**
+ * @swagger
+ * /api/v1/sample/{type}:
+ *   get:
+ *     summary: Get sample data by type
+ *     tags: [Sample Data]
+ *     parameters:
+ *       - in: path
+ *         name: type
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       '200':
+ *         description: The requested sample data.
+ *       '404':
+ *         description: Sample data not found.
+ */
 // Sample Data Endpoints - Showcase Ultimate Translator Capabilities
 router.get("/sample/:type", asyncHandler(async (req, res) => {
   const { type } = req.params;
@@ -661,6 +679,16 @@ router.get("/sample/:type", asyncHandler(async (req, res) => {
   });
 }));
 
+/**
+ * @swagger
+ * /api/v1/samples:
+ *   get:
+ *     summary: List all available sample data
+ *     tags: [Sample Data]
+ *     responses:
+ *       '200':
+ *         description: A list of available samples.
+ */
 // List all available sample data
 router.get("/samples", asyncHandler(async (req, res) => {
   const samples = Object.keys(sampleData).map(key => {
@@ -730,6 +758,10 @@ function getSampleComplexity(type) {
   };
   return complexity[type] || 'Medium';
 }
+
+// Translation Rules Management
+router.get("/translation-rules", asyncHandler(translationRulesController.getTranslationRules));
+router.put("/translation-rules", asyncHandler(translationRulesController.updateTranslationRules));
 
 // Enhanced health check endpoint with comprehensive monitoring
 router.get("/health", async (req, res) => {
@@ -903,16 +935,6 @@ router.post("/metrics/reset",
     
     res.status(200).json(response);
   })
-);
-
-// Translation Rules Management
-router.get(
-  "/translation-rules",
-  asyncHandler(translationRulesController.getTranslationRules)
-);
-router.put(
-  "/translation-rules",
-  asyncHandler(translationRulesController.updateTranslationRules)
 );
 
 module.exports = router;

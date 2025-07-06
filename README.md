@@ -79,12 +79,11 @@ cp .env.example .env
 # Edit .env file with your configuration
 
 # Start all services
-docker-compose up -d
+docker-compose -f docker-compose.dev.yml up -d --build
 
 # The application will be available at:
 # - Main App: http://localhost:3000 (or your configured PORT)
 # - MongoDB: mongodb://localhost:27017
-# - HuggingFace Service: http://localhost:5000
 
 # View logs
 docker-compose logs -f app
@@ -112,6 +111,16 @@ npm start
 # For development with auto-restart
 npm run dev
 ```
+
+
+## Usage
+- Browse: http://localhost:3000/
+- First, setup API keys from the UI (set at-least one as default)
+- Test out a few simple translations using Text Translation
+- Then use Page Translation service
+- To manage Tranalsted pages: Translation Management
+- Source Management is still under developemnt
+- Use api-docs/ to see the api endpoints
 
 ## API Documentation
 

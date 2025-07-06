@@ -2,7 +2,25 @@ const { TranslatedPage, FieldApproval } = require("../models/TranslatedPage");
 const filterAndGroup = require("../services/FilterAndGroupTranslationService");
 const FieldApprovalService = require("../services/FieldApprovalService");
 
+/**
+ * @swagger
+ * tags:
+ *   name: Translated List Management
+ *   description: Endpoints for managing and filtering translated content.
+ */
 const TranslatedListController = {
+  /**
+   * @swagger
+   * /api/v1/translated-list:
+   *   get:
+   *     summary: Filter and group translated content
+   *     tags: [Translated List Management]
+   *     responses:
+   *       '200':
+   *         description: A list of filtered and grouped translations.
+   *       '404':
+   *         description: No translations found.
+   */
   filterList: async (req, res) => {
     const filterResponse = await filterAndGroup(req);
 
@@ -13,6 +31,16 @@ const TranslatedListController = {
     }
   },
 
+  /**
+   * @swagger
+   * /api/v1/model-names:
+   *   get:
+   *     summary: Get all unique model names
+   *     tags: [Translated List Management]
+   *     responses:
+   *       '200':
+   *         description: A list of model names.
+   */
   getModelNames: async (req, res) => {
     try {
       // Get all unique model names from the database
@@ -35,6 +63,34 @@ const TranslatedListController = {
     }
   },
 
+  /**
+   * @swagger
+   * /api/v1/translation-comparison:
+   *   get:
+   *     summary: Get a comparison between source and translated data
+   *     tags: [Translated List Management]
+   *     parameters:
+   *       - in: query
+   *         name: content_id
+   *         required: true
+   *         schema:
+   *           type: string
+   *       - in: query
+   *         name: model_name
+   *         required: true
+   *         schema:
+   *           type: string
+   *       - in: query
+   *         name: language
+   *         required: true
+   *         schema:
+   *           type: string
+   *     responses:
+   *       '200':
+   *         description: A comparison of source and translated data.
+   *       '404':
+   *         description: Translation not found.
+   */
   getTranslationComparison: async (req, res) => {
     try {
       const { content_id, model_name, language } = req.query;
@@ -111,6 +167,38 @@ const TranslatedListController = {
     }
   },
 
+  /**
+   * @swagger
+   * /api/v1/field-approval:
+   *   post:
+   *     summary: Save approval status for a specific field
+   *     tags: [Translated List Management]
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             properties:
+   *               content_id:
+   *                 type: string
+   *               model_name:
+   *                 type: string
+   *               language:
+   *                 type: string
+   *               field_path:
+   *                 type: string
+   *               original_text:
+   *                 type: string
+   *               translated_text:
+   *                 type: string
+   *               status:
+   *                 type: string
+   *                 enum: [approved, rejected, pending]
+   *     responses:
+   *       '200':
+   *         description: Field approval status saved successfully.
+   */
   saveFieldApproval: async (req, res) => {
     try {
       const {
@@ -172,6 +260,27 @@ const TranslatedListController = {
     }
   },
 
+  /**
+   * @swagger
+   * /api/v1/field-approvals/bulk:
+   *   post:
+   *     summary: Bulk save field approval statuses
+   *     tags: [Translated List Management]
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             properties:
+   *               approvals:
+   *                 type: array
+   *                 items:
+   *                   type: object
+   *     responses:
+   *       '200':
+   *         description: Bulk operation completed successfully.
+   */
   bulkSaveFieldApprovals: async (req, res) => {
     try {
       const { approvals } = req.body;
@@ -209,6 +318,16 @@ const TranslatedListController = {
     }
   },
 
+  /**
+   * @swagger
+   * /api/v1/approval-statistics:
+   *   get:
+   *     summary: Get statistics on field approvals
+   *     tags: [Translated List Management]
+   *     responses:
+   *       '200':
+   *         description: A summary of field approval statistics.
+   */
   getApprovalStatistics: async (req, res) => {
     try {
       const result = await FieldApprovalService.getApprovalStatistics();
@@ -234,6 +353,31 @@ const TranslatedListController = {
     }
   },
 
+  /**
+   * @swagger
+   * /api/v1/delete-translation:
+   *   delete:
+   *     summary: Delete a specific translation
+   *     tags: [Translated List Management]
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             properties:
+   *               content_id:
+   *                 type: string
+   *               model_name:
+   *                 type: string
+   *               language:
+   *                 type: string
+   *     responses:
+   *       '200':
+   *         description: Translation deleted successfully.
+   *       '404':
+   *         description: Translation not found.
+   */
   deleteTranslation: async (req, res) => {
     try {
       const { content_id, model_name, language } = req.body;

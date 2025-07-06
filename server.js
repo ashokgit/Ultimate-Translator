@@ -15,6 +15,8 @@ const apiRoutes = require("./api/endpoint");
 const { initializeConfig } = require("./helpers/stringHelpers");
 const path = require("path");
 const bodyParser = require("body-parser");
+const swaggerUi = require('swagger-ui-express');
+const swaggerSpec = require('./config/swagger');
 
 const { translate } = require("@vitalets/google-translate-api");
 const TextTranslator = require("./translators/TextTranslator");
@@ -41,8 +43,8 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'", "https://cdnjs.cloudflare.com", "https://fonts.googleapis.com"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "https://code.jquery.com", "https://cdnjs.cloudflare.com", "https://fonts.googleapis.com"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://cdnjs.cloudflare.com", "https://fonts.googleapis.com", "https://unpkg.com"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "https://code.jquery.com", "https://cdnjs.cloudflare.com", "https://fonts.googleapis.com", "https://unpkg.com"],
       scriptSrcAttr: ["'unsafe-inline'"],
       fontSrc: ["'self'", "https://fonts.gstatic.com", "https://fonts.googleapis.com"],
       connectSrc: ["'self'"],
@@ -142,6 +144,9 @@ app.use(bodyParser.urlencoded({
   extended: true,
   limit: '10mb'
 }));
+
+// Swagger UI
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // Define routes
 app.use("/api/v1", apiRoutes);

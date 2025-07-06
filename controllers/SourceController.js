@@ -1,7 +1,38 @@
 const { TranslatedPage } = require("../models/TranslatedPage");
 const SourceCompareService = require("../services/SourceCompareService");
 
+/**
+ * @swagger
+ * tags:
+ *   name: Source Management
+ *   description: Endpoints for managing source content.
+ */
 const sourceController = {
+  /**
+   * @swagger
+   * /api/v1/update-source:
+   *   put:
+   *     summary: Update the source data for a translation
+   *     tags: [Source Management]
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             properties:
+   *               updatedJson:
+   *                 type: string
+   *               content_id:
+   *                 type: string
+   *               model_name:
+   *                 type: string
+   *     responses:
+   *       '200':
+   *         description: Source data updated successfully.
+   *       '404':
+   *         description: Translation not found.
+   */
   changeSource: async (req, res) => {
     try {
       const { updatedJson, content_id, model_name } = req.body;

@@ -3,9 +3,38 @@ const MetadataService = require("../services/MetadataService");
 const logger = require("../utils/logger");
 const { successResponse, ValidationError } = require("../utils/errorHandler");
 
+/**
+ * @swagger
+ * tags:
+ *   name: Sample Data
+ *   description: Endpoints for generating and retrieving sample data.
+ */
 const sampleController = {
   /**
-   * Generate sample translated data with intelligent categorization
+   * @swagger
+   * /api/v1/sample/generate:
+   *   get:
+   *     summary: Generate sample translated data
+   *     tags: [Sample Data]
+   *     parameters:
+   *       - in: query
+   *         name: model_name
+   *         required: true
+   *         schema:
+   *           type: string
+   *       - in: query
+   *         name: language
+   *         required: true
+   *         schema:
+   *           type: string
+   *       - in: query
+   *         name: source_url
+   *         required: true
+   *         schema:
+   *           type: string
+   *     responses:
+   *       '200':
+   *         description: Sample data generated successfully.
    */
   generateSample: async (req, res) => {
     const { model_name, language, source_url, content_id, customer_id } = req.query;
@@ -84,7 +113,14 @@ const sampleController = {
   },
 
   /**
-   * Get available sample types
+   * @swagger
+   * /api/v1/sample/types:
+   *   get:
+   *     summary: Get available sample types
+   *     tags: [Sample Data]
+   *     responses:
+   *       '200':
+   *         description: A list of available sample types.
    */
   getSampleTypes: async (req, res) => {
     const sampleTypes = [
@@ -130,7 +166,30 @@ const sampleController = {
   },
 
   /**
-   * Get translation quality metrics for a specific translation
+   * @swagger
+   * /api/v1/sample/quality:
+   *   get:
+   *     summary: Get translation quality metrics for a specific translation
+   *     tags: [Sample Data]
+   *     parameters:
+   *       - in: query
+   *         name: content_id
+   *         required: true
+   *         schema:
+   *           type: string
+   *       - in: query
+   *         name: model_name
+   *         required: true
+   *         schema:
+   *           type: string
+   *       - in: query
+   *         name: language
+   *         required: true
+   *         schema:
+   *           type: string
+   *     responses:
+   *       '200':
+   *         description: Quality metrics retrieved successfully.
    */
   getQualityMetrics: async (req, res) => {
     const { content_id, model_name, language } = req.query;
