@@ -1,10 +1,10 @@
-![Ultimate Translator Screenshot](public/images/sc.png)
+![Easy AI Translator Screenshot](public/images/sc.png)
 
-# Ultimate Translator
+# Easy AI Translator
 
 ## Overview
 
-**Ultimate Translator** is a comprehensive web-based translation service that can translate web content, individual strings, and entire JSON structures. It supports multiple translation providers including Google Translate, OpenAI (tested), and HuggingFace models, making it a flexible solution for various translation needs.
+**Easy AI Translator** is a comprehensive web-based translation service that can translate web content, individual strings, and entire JSON structures. It supports multiple translation providers including Google Translate, OpenAI (tested), and HuggingFace models, making it a flexible solution for various translation needs.
 
 ## Prerequisites
 
@@ -77,24 +77,24 @@ npm start
 npm run dev
 ```
 
-## 🚀 Unleash the Power of Ultimate Translator
+## 🚀 Unleash the Power of Easy AI Translator
 
-Welcome to Ultimate Translator! You've set up a powerful, enterprise-grade translation service. Here's how to get started and experience its full potential.
+Welcome to Easy AI Translator! You've set up a powerful, enterprise-grade translation service. Here's how to get started and experience its full potential.
 
 ### Your Quick Start Guide
 
 #### 1. Power Up Your Translation Engines
-Before you can translate, connect your favorite providers. Ultimate Translator puts you in control.
+Before you can translate, connect your favorite providers. Easy AI Translator puts you in control.
 
 - **Navigate to the UI**: Open your browser to `http://localhost:3000/`.
 - **Add API Keys**: Go to the "API Key Management" section. Here, you can securely add and encrypt keys for **Google Translate**, **OpenAI (GPT)**, or even your own self-hosted **HuggingFace** models for maximum privacy and control.
 - **Set a Default**: Choose one key as your default for quick, everyday translations.
 
 #### 2. Translate Anything, Instantly
-Ultimate Translator is built to handle any translation task, from a single word to complex, structured data.
+Easy AI Translator is built to handle any translation task, from a single word to complex, structured data.
 
 - **Simple Text Translation**: Start with the "Text Translation" tool to test your setup. It's a great way to see the speed and quality of your chosen provider.
-- **Full Web Page Translation**: Drop any URL into the "Page Translation" service and watch as Ultimate Translator renders a fully translated version in real-time.
+- **Full Web Page Translation**: Drop any URL into the "Page Translation" service and watch as Easy AI Translator renders a fully translated version in real-time.
 - **Intelligent JSON Translation**: For developers, this is where the magic happens. Translate complex JSON objects without corrupting your data. Our intelligent engine automatically detects and preserves keys, IDs, URLs, and other non-translatable elements, ensuring your data structure remains intact. Explore the `/api/v1/sample/{type}` endpoint to see this in action with sample e-commerce or technical data.
 
 #### 3. Manage and Scale with Confidence
@@ -105,20 +105,20 @@ Keep track of your work and rely on a system built for performance.
 
 ### For Developers: A Powerful API Awaits
 
-Ultimate Translator is more than a UI; it's a developer-first platform.
+Easy AI Translator is more than a UI; it's a developer-first platform.
 
 - **Explore the API**: Head to `http://localhost:3000/api-docs` to access the interactive Swagger UI. Discover all available endpoints for programmatic translation, configuration, and management.
 - **Integrate with Ease**: Build powerful, multilingual applications by leveraging a robust, secure, and well-documented API.
 
-## Why Ultimate Translator? The Solution for Complex, Large-Scale Translation
+## Why Easy AI Translator? The Solution for Complex, Large-Scale Translation
 
 Managing translations when your content is vast, complex, and constantly changing is a nightmare. Translating backend data for frontend applications, especially unstructured or nested JSON, often leads to corrupted data, broken user experiences, and immense manual effort.
 
-**Ultimate Translator is built to solve this.** It automates and manages bulk translations for any data structure, adapting to your content with unparalleled intelligence and configurability.
+**Easy AI Translator is built to solve this.** It automates and manages bulk translations for any data structure, adapting to your content with unparalleled intelligence and configurability.
 
 ### Key Differentiators: The "Hidden" Features
 
-Beyond simple string-for-string translation, Ultimate Translator provides an enterprise-grade engine packed with features that ensure quality, reliability, and cost-effectiveness.
+Beyond simple string-for-string translation, Easy AI Translator provides an enterprise-grade engine packed with features that ensure quality, reliability, and cost-effectiveness.
 
 - **Intelligent Content-Aware Translation**: The system automatically detects and preserves non-translatable elements.
     - It intelligently skips over IDs, slugs, URLs, currency values, and code snippets, preventing data corruption.
@@ -139,7 +139,7 @@ Beyond simple string-for-string translation, Ultimate Translator provides an ent
     - **Bring Your Own Model**: For maximum privacy and control, you can point the service to your own self-hosted HuggingFace translation models.
     - **Secure, Encrypted Key Management**: Store your API keys with confidence, encrypted within your own database.
 
-Ultimate Translator is not just a tool; it's a complete, reliable, and intelligent translation management platform designed for the complexities of modern applications.
+Easy AI Translator is not just a tool; it's a complete, reliable, and intelligent translation management platform designed for the complexities of modern applications.
 
 ## Limitations & Future Roadmap
 
@@ -156,7 +156,7 @@ While the core translation engine is powerful and reliable, it has been tested p
 
 ### Future Roadmap
 
-We have an ambitious roadmap to evolve Ultimate Translator into an even more intelligent and cost-effective platform.
+We have an ambitious roadmap to evolve Easy AI Translator into an even more intelligent and cost-effective platform.
 
 -   **Dynamic Model Selection for Cost Savings**: An intelligent routing layer will analyze the complexity of the source text and automatically select the best model for the job. Simple text will be routed to faster, cheaper models, while more nuanced content will use powerful models like GPT-4, significantly optimizing API costs.
 -   **Expanded AI Provider Integration**: We plan to test, certify, and integrate a wider range of translation models and providers, giving you even more flexibility.
